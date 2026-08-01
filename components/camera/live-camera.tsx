@@ -2,13 +2,15 @@
 
 import { FilesetResolver, GestureRecognizer } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { blendGesture } from "@/features/gesture/classify-landmarks";
 
 type Hand = { player: "PLAYER_A" | "PLAYER_B"; gesture: string; score: number };
-const gestureNames: Record<string, string> = {
-  Closed_Fist: "グー",
-  Open_Palm: "パー",
-  Victory: "チョキ",
-};
+const gestureNames = {
+  ROCK: "グー",
+  PAPER: "パー",
+  SCISSORS: "チョキ",
+  UNKNOWN: "認識中",
+} as const;
 const wasmUrl =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 
@@ -78,12 +80,18 @@ export function LiveCamera() {
           const found = result.landmarks
             .map((points, index) => {
               const category = result.gestures[index]?.[0];
-            const player: Hand["player"] =
-                (points[0]?.x ?? 0.5) < 0.5 ? "PLAYER_A" : "PLAYER_B";
+              const classification = blendGesture(
+                category?.categoryName,
+                category?.score ?? 0,
+                points,
+              );
+              const screenX = 1 - (points[0]?.x ?? 0.5);
+              const player: Hand["player"] =
+                screenX < 0.5 ? "PLAYER_A" : "PLAYER_B";
               return {
                 player,
-                gesture: gestureNames[category?.categoryName ?? ""] ?? "認識中",
-                score: category?.score ?? 0,
+                gesture: gestureNames[classification.gesture],
+                score: classification.score,
               };
             })
             .sort((a, b) => a.player.localeCompare(b.player));

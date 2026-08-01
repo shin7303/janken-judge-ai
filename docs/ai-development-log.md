@@ -34,3 +34,4 @@
 - Bundled the MediaPipe Gesture Recognizer model as a versioned static asset and configured two-hand VIDEO recognition.
 - Assigned players by horizontal landmark position and displayed live gesture, confidence, and inference FPS.
 - Stopped tracks and disposed the recognizer when the user stops the camera or leaves the page.
+- Added a landmark-based fallback classifier and blended it with the model score; mirrored display coordinates are converted before player assignment.
