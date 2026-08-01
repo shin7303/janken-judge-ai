@@ -405,6 +405,25 @@ h2 {
   font-size: 15px;
   line-height: 1.9;
 }
+.history-list {
+  display: grid;
+  gap: 8px;
+  margin: 28px 0;
+  padding: 0;
+  list-style: none;
+}
+.history-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f3f7f9;
+  font-size: 12px;
+}
+.history-list span {
+  color: #6d7b8f;
+}
 .demo-page {
   min-height: 100dvh;
   padding: 22px clamp(20px, 6vw, 100px) 72px;

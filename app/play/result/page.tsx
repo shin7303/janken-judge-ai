@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RoundResult } from "@/domain/types";
+import { saveResult } from "@/features/history/store";
 
 const names = {
   ROCK: "グー",
@@ -25,6 +26,13 @@ export default function ResultPage() {
     const saved = sessionStorage.getItem("janken-last-result");
     return saved ? (JSON.parse(saved) as RoundResult) : null;
   });
+  const stored = useRef(false);
+  useEffect(() => {
+    if (result && !stored.current) {
+      saveResult(result);
+      stored.current = true;
+    }
+  }, [result]);
   if (!result)
     return (
       <main className="status-page">
@@ -58,6 +66,9 @@ export default function ResultPage() {
           </Link>
           <Link className="button button-secondary" href="/play/setup">
             セットアップ
+          </Link>
+          <Link className="button button-secondary" href="/history">
+            履歴
           </Link>
         </div>
       </div>
