@@ -201,3 +201,39 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (55 tests), `test:e2e` (2 browser tests), and `build` passed locally.
+
+## 2026-08-01 — Portfolio documentation and complete browser flows
+
+- Replaced the phase-zero README with the required product overview, public URL, features, stack, architecture, verdict logic, privacy guarantees, setup, test and deploy instructions, limitations, Codex workflow, license status, and roadmap.
+- Added current architecture and limitations documents plus ADRs for client-only Worker inference and conservative fairness verdicts.
+- Generated a portfolio Open Graph visual, connected it through the Next.js 16 metadata file convention, and added Japanese alternative text and the verified Production metadata base.
+- Extended CI with formatting and Playwright checks, including Chromium installation.
+- Added browser flows for landing-to-demo navigation, normal and delayed demo evidence, camera denial and retry, settings persistence and reset, replay fallback, history save/delete, and result-to-rematch navigation.
+- Hardened history parsing, capacity, export, deletion, random-ID fallback, and blocked-storage behavior with unit coverage.
+
+### Failures and fixes
+
+- Prettier cannot infer a parser for Next's `opengraph-image.alt.txt`; excluded that framework metadata text file from formatting while retaining its contents.
+- The first product-flow test expected a non-existent internal reason-code name and used a stale replay key. Switched both to production constants and the actual evidence code.
+- Interrupted screenshot attempts left a development server alive; a later E2E run reused it and timed out during navigation. Terminated the owned process and confirmed all six tests against a clean server.
+- Both the Playwright screenshot CLI and `page.screenshot` stopped in the constrained headless renderer. Kept the generated OGP visual as the README preview and left a real-device product capture as a release checklist item.
+- A proposed Playwright `reducedMotion` config field was not supported by the installed type definitions. Removed it and used deterministic DOM activation for the affected navigation checks.
+
+## 2026-08-01 — Adversarial browser-lifecycle hardening
+
+- Wrapped session storage reads, writes, and removal so restricted privacy modes cannot prevent result navigation or replay fallback.
+- Revoked a newly created replay Object URL when storage rejects it, feature-detected URL creation, and closed countdown audio on recorder completion.
+- Made replay cleanup best-effort when storage or URL APIs throw.
+- Retained an in-memory settings snapshot when localStorage is blocked and still notified the live UI.
+- Centralized countdown, display, observation capacity, ROI, brightness, and landmark-classification heuristics alongside all existing decision thresholds.
+- Removed the hover translation that could make edge-of-button pointer activation oscillate.
+- Added safe-storage and malformed-history tests.
+
+### Failures and fixes
+
+- Typecheck caught the unsupported Playwright config option described above before it could enter CI.
+- The first production build with the file-convention OGP emitted a missing `metadataBase` warning. Verified the existing Vercel Production URL before adding it rather than inventing a host.
+
+### Verification
+
+- `format:check`, `lint`, `typecheck`, `test` (61 tests), `test:e2e` (6 browser tests), and `build` passed locally after clean-process verification.
