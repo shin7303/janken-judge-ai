@@ -67,7 +67,9 @@ export function roundMachine(
     if (state.phase !== "CAMERA_READY") return state;
     return {
       phase: "COUNTDOWN",
-      countdown: 3,
+      countdown: Math.ceil(
+        ROUND_CONFIG.countdownMs / ROUND_CONFIG.countdownTickMs,
+      ),
       ponTimestampMs: null,
       abortReason: null,
     };
@@ -91,3 +93,4 @@ export function roundMachine(
     return { ...state, phase: "RESULT" };
   return state;
 }
+import { ROUND_CONFIG } from "@/domain/round-config";

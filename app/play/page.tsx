@@ -24,6 +24,10 @@ import {
 } from "@/features/replay/storage";
 import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
 import { usePlaySettings } from "@/features/settings/use-settings";
+import {
+  removeStorageItem,
+  writeStorageItem,
+} from "@/features/storage/safe-storage";
 
 const players: PlayerId[] = ["PLAYER_A", "PLAYER_B"];
 
@@ -39,35 +43,40 @@ export default function PlayPage() {
   const [state, dispatch] = useReducer(roundMachine, initialRoundState);
   const [tabActive, setTabActive] = useState(true);
 
-  const onFrame = useCallback((next: LiveHand[]) => {
-    const timestampMs = next[0]?.timestampMs ?? performance.now();
-    observations.current.push(
-      ...players.map((playerId) => {
-        const hand = next.find((item) => item.player === playerId);
-        return hand
-          ? {
-              timestampMs: hand.timestampMs,
-              playerId,
-              gesture: hand.gesture,
-              gestureScore: hand.score,
-              handVisible: true,
-              centroid: hand.centroid,
-              assignmentConfidence: hand.assignmentConfidence,
-              crossed: hand.crossed,
-            }
-          : {
-              timestampMs,
-              playerId,
-              gesture: "UNKNOWN" as const,
-              gestureScore: 0,
-              handVisible: false,
-              centroid: null,
-              assignmentConfidence: 0,
-            };
-      }),
-    );
-    observations.current = observations.current.slice(-240);
-  }, []);
+  const onFrame = useCallback(
+    (next: LiveHand[]) => {
+      const timestampMs = next[0]?.timestampMs ?? performance.now();
+      observations.current.push(
+        ...players.map((playerId) => {
+          const hand = next.find((item) => item.player === playerId);
+          return hand
+            ? {
+                timestampMs: hand.timestampMs,
+                playerId,
+                gesture: hand.gesture,
+                gestureScore: hand.score,
+                handVisible: true,
+                centroid: hand.centroid,
+                assignmentConfidence: hand.assignmentConfidence,
+                crossed: hand.crossed,
+              }
+            : {
+                timestampMs,
+                playerId,
+                gesture: "UNKNOWN" as const,
+                gestureScore: 0,
+                handVisible: false,
+                centroid: null,
+                assignmentConfidence: 0,
+              };
+        }),
+      );
+      observations.current = observations.current.slice(
+        -config.maxObservationBuffer,
+      );
+    },
+    [config.maxObservationBuffer],
+  );
 
   const onDiagnostics = useCallback(
     (diagnostics: LiveCameraDiagnostics) => {
@@ -112,21 +121,33 @@ export default function PlayPage() {
     if (ponTimestampMs === null) return;
     dispatch({ type: "FINALIZE" });
     const result = analyzeRound(observations.current, ponTimestampMs, config);
-    sessionStorage.setItem("janken-last-result", JSON.stringify(result));
+    writeStorageItem(
+      sessionStorage,
+      "janken-last-result",
+      JSON.stringify(result),
+    );
     const activeRecorder = recorder.current;
     if (activeRecorder?.state === "recording") {
       activeRecorder.onstop = () => {
-        if (replayChunks.current.length) {
-          sessionStorage.setItem(
-            REPLAY_URL_KEY,
-            URL.createObjectURL(
-              new Blob(replayChunks.current, {
-                type: activeRecorder.mimeType || "video/webm",
-              }),
-            ),
+        if (
+          replayChunks.current.length &&
+          typeof URL.createObjectURL === "function"
+        ) {
+          const replayUrl = URL.createObjectURL(
+            new Blob(replayChunks.current, {
+              type: activeRecorder.mimeType || "video/webm",
+            }),
           );
+          const storedReplay = writeStorageItem(
+            sessionStorage,
+            REPLAY_URL_KEY,
+            replayUrl,
+          );
+          if (!storedReplay && typeof URL.revokeObjectURL === "function")
+            URL.revokeObjectURL(replayUrl);
           if (recordingStartedAt.current !== null)
-            sessionStorage.setItem(
+            writeStorageItem(
+              sessionStorage,
               REPLAY_METADATA_KEY,
               JSON.stringify({
                 recordingStartedAtMs: recordingStartedAt.current,
@@ -134,11 +155,14 @@ export default function PlayPage() {
               }),
             );
         } else {
-          sessionStorage.setItem(
+          writeStorageItem(
+            sessionStorage,
             REPLAY_UNAVAILABLE_KEY,
             "録画データを作成できませんでした。判定タイムラインをご確認ください。",
           );
         }
+        void countdownAudio.current?.close();
+        countdownAudio.current = null;
         dispatch({ type: "COMPLETE" });
         location.assign("/play/result");
       };
@@ -164,14 +188,14 @@ export default function PlayPage() {
             type: "COUNTDOWN_TICK",
             timestampMs: performance.now(),
           }),
-        1000,
+        config.countdownTickMs,
       );
       return () => window.clearTimeout(timer);
     }
     if (state.phase === "PON") {
       const timer = window.setTimeout(
         () => dispatch({ type: "BEGIN_OBSERVING" }),
-        250,
+        config.ponDisplayMs,
       );
       return () => window.clearTimeout(timer);
     }
@@ -185,6 +209,8 @@ export default function PlayPage() {
     }
   }, [
     config.postPonDeadlineMs,
+    config.countdownTickMs,
+    config.ponDisplayMs,
     finishRound,
     state.countdown,
     state.phase,
@@ -223,7 +249,7 @@ export default function PlayPage() {
     void countdownAudio.current?.close();
     countdownAudio.current = createCountdownAudio(settings.countdownVolume);
     revokeStoredReplay(sessionStorage);
-    sessionStorage.removeItem(REPLAY_UNAVAILABLE_KEY);
+    removeStorageItem(sessionStorage, REPLAY_UNAVAILABLE_KEY);
     if (settings.replayEnabled && stream.current && "MediaRecorder" in window) {
       try {
         recorder.current = new MediaRecorder(
@@ -234,7 +260,8 @@ export default function PlayPage() {
           if (event.data.size) replayChunks.current.push(event.data);
         };
         recorder.current.onerror = () =>
-          sessionStorage.setItem(
+          writeStorageItem(
+            sessionStorage,
             REPLAY_UNAVAILABLE_KEY,
             "このブラウザではリプレイ録画を継続できませんでした。判定は続行します。",
           );
@@ -242,18 +269,21 @@ export default function PlayPage() {
         recorder.current.start();
       } catch {
         recorder.current = null;
-        sessionStorage.setItem(
+        writeStorageItem(
+          sessionStorage,
           REPLAY_UNAVAILABLE_KEY,
           "このブラウザではリプレイ録画を開始できません。判定のみ続行します。",
         );
       }
     } else if (!settings.replayEnabled) {
-      sessionStorage.setItem(
+      writeStorageItem(
+        sessionStorage,
         REPLAY_UNAVAILABLE_KEY,
         "設定でスローリプレイが無効です。判定タイムラインは確認できます。",
       );
     } else {
-      sessionStorage.setItem(
+      writeStorageItem(
+        sessionStorage,
         REPLAY_UNAVAILABLE_KEY,
         "このブラウザはMediaRecorderに対応していないため、判定のみ行います。",
       );

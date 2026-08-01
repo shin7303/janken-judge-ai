@@ -3,8 +3,8 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
   parseSettings,
+  readSettingsSnapshot,
   SETTINGS_EVENT,
-  SETTINGS_KEY,
   type PlaySettings,
   writeSettings,
 } from "./store";
@@ -17,17 +17,14 @@ const subscribe = (onChange: () => void) => {
     window.removeEventListener(SETTINGS_EVENT, onChange);
   };
 };
-const getSnapshot = () => {
-  try {
-    return localStorage.getItem(SETTINGS_KEY) ?? "";
-  } catch {
-    return "";
-  }
-};
 const getServerSnapshot = () => "";
 
 export function usePlaySettings() {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const raw = useSyncExternalStore(
+    subscribe,
+    readSettingsSnapshot,
+    getServerSnapshot,
+  );
   const settings = useMemo(() => parseSettings(raw), [raw]);
   const update = (patch: Partial<PlaySettings>) =>
     writeSettings({ ...settings, ...patch });

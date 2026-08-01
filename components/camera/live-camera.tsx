@@ -278,7 +278,7 @@ export function LiveCamera({
         onFrame?.(found);
         count += 1;
         const now = performance.now();
-        if (now - measuredSince >= 1000) {
+        if (now - measuredSince >= ROUND_CONFIG.diagnosticsWindowMs) {
           const measuredFps = Math.round(
             (count * 1000) / (now - measuredSince),
           );

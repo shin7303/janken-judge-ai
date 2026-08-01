@@ -2,8 +2,8 @@ export type BrightnessLevel = "dark" | "good" | "bright" | "unavailable";
 
 export function classifyBrightness(value: number | null): BrightnessLevel {
   if (value === null || !Number.isFinite(value)) return "unavailable";
-  if (value < 45) return "dark";
-  if (value > 220) return "bright";
+  if (value < ROUND_CONFIG.darkBrightnessThreshold) return "dark";
+  if (value > ROUND_CONFIG.brightBrightnessThreshold) return "bright";
   return "good";
 }
 
@@ -20,3 +20,4 @@ export function averageBrightness(data: Uint8ClampedArray): number | null {
   }
   return pixels ? total / pixels : null;
 }
+import { ROUND_CONFIG } from "@/domain/round-config";

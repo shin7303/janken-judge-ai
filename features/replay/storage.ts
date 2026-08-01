@@ -27,8 +27,12 @@ export function revokeStoredReplay(
   storage: Pick<Storage, "getItem" | "removeItem">,
   urlApi: Pick<typeof URL, "revokeObjectURL"> = URL,
 ) {
-  const replayUrl = storage.getItem(REPLAY_URL_KEY);
-  if (replayUrl?.startsWith("blob:")) urlApi.revokeObjectURL(replayUrl);
-  storage.removeItem(REPLAY_URL_KEY);
-  storage.removeItem(REPLAY_METADATA_KEY);
+  try {
+    const replayUrl = storage.getItem(REPLAY_URL_KEY);
+    if (replayUrl?.startsWith("blob:")) urlApi.revokeObjectURL(replayUrl);
+    storage.removeItem(REPLAY_URL_KEY);
+    storage.removeItem(REPLAY_METADATA_KEY);
+  } catch {
+    // Cleanup is best-effort when browser storage or Object URLs are blocked.
+  }
 }

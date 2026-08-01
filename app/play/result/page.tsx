@@ -1,16 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { ReplayPlayer } from "@/components/replay/replay-player";
 import type { RoundResult } from "@/domain/types";
 import { saveResult } from "@/features/history/store";
 import {
   readReplayMetadata,
+  REPLAY_METADATA_KEY,
   REPLAY_UNAVAILABLE_KEY,
   REPLAY_URL_KEY,
   revokeStoredReplay,
 } from "@/features/replay/storage";
+import {
+  readStorageItem,
+  removeStorageItem,
+} from "@/features/storage/safe-storage";
 
 const names = {
   ROCK: "グー",
@@ -27,33 +38,45 @@ const verdicts = {
   INSUFFICIENT_DATA: "判定不能",
   INVALID_ROUND: "無効ラウンド",
 } as const;
+
+const noSessionSubscription = () => () => {};
+const emptySessionSnapshot = () => "";
+function useSessionValue(key: string) {
+  return useSyncExternalStore(
+    noSessionSubscription,
+    () => {
+      try {
+        return readStorageItem(sessionStorage, key) ?? "";
+      } catch {
+        return "";
+      }
+    },
+    emptySessionSnapshot,
+  );
+}
+
 export default function ResultPage() {
-  const [result] = useState<RoundResult | null>(() => {
-    if (typeof window === "undefined") return null;
+  const serializedResult = useSessionValue("janken-last-result");
+  const result = useMemo<RoundResult | null>(() => {
     try {
-      const saved = sessionStorage.getItem("janken-last-result");
-      return saved ? (JSON.parse(saved) as RoundResult) : null;
+      return serializedResult
+        ? (JSON.parse(serializedResult) as RoundResult)
+        : null;
     } catch {
       return null;
     }
-  });
+  }, [serializedResult]);
   const stored = useRef(false);
-  const [replay] = useState(() =>
-    typeof window === "undefined"
-      ? null
-      : sessionStorage.getItem(REPLAY_URL_KEY),
+  const replay = useSessionValue(REPLAY_URL_KEY) || null;
+  const serializedMetadata = useSessionValue(REPLAY_METADATA_KEY);
+  const replayMetadata = useMemo(
+    () => (serializedMetadata ? readReplayMetadata(sessionStorage) : null),
+    [serializedMetadata],
   );
-  const [replayMetadata] = useState(() =>
-    typeof window === "undefined" ? null : readReplayMetadata(sessionStorage),
-  );
-  const [replayUnavailable] = useState(() =>
-    typeof window === "undefined"
-      ? null
-      : sessionStorage.getItem(REPLAY_UNAVAILABLE_KEY),
-  );
+  const replayUnavailable = useSessionValue(REPLAY_UNAVAILABLE_KEY) || null;
   const cleanupReplay = useCallback(() => {
     revokeStoredReplay(sessionStorage);
-    sessionStorage.removeItem(REPLAY_UNAVAILABLE_KEY);
+    removeStorageItem(sessionStorage, REPLAY_UNAVAILABLE_KEY);
   }, []);
   useEffect(() => {
     window.addEventListener("pagehide", cleanupReplay);

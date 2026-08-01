@@ -14,6 +14,15 @@ export const DEFAULT_SETTINGS: PlaySettings = {
   mirrored: true,
   countdownVolume: 0.5,
 };
+let memorySnapshot = "";
+
+export function readSettingsSnapshot() {
+  try {
+    return localStorage.getItem(SETTINGS_KEY) ?? "";
+  } catch {
+    return memorySnapshot;
+  }
+}
 
 export function parseSettings(raw: string | null): PlaySettings {
   try {
@@ -44,19 +53,23 @@ export function parseSettings(raw: string | null): PlaySettings {
 }
 
 export function writeSettings(settings: PlaySettings) {
+  memorySnapshot = JSON.stringify(settings);
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    window.dispatchEvent(new Event(SETTINGS_EVENT));
+    localStorage.setItem(SETTINGS_KEY, memorySnapshot);
   } catch {
-    // The current in-memory UI state remains usable when storage is blocked.
+    // Continue with the in-memory snapshot when persistent storage is blocked.
   }
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 
 export function resetSettings() {
+  memorySnapshot = "";
   try {
     localStorage.removeItem(SETTINGS_KEY);
-    window.dispatchEvent(new Event(SETTINGS_EVENT));
   } catch {
     // Storage can be unavailable in privacy modes; defaults still apply.
   }
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event(SETTINGS_EVENT));
 }

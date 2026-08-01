@@ -11,13 +11,24 @@ export default function HistoryPage() {
   const [items, setItems] = useState<HistoryItem[]>(() =>
     typeof window === "undefined" ? [] : readHistory(),
   );
+  const [message, setMessage] = useState("");
   const download = () => {
+    if (!URL.createObjectURL || !URL.revokeObjectURL) {
+      setMessage("このブラウザではJSONを書き出せません。");
+      return;
+    }
     const url = URL.createObjectURL(exportHistory());
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "janken-history.json";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "janken-history.json";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setMessage("JSONを書き出しました。");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   };
   return (
     <main className="status-page">
@@ -46,6 +57,7 @@ export default function HistoryPage() {
                 onClick={() => {
                   clearHistory();
                   setItems([]);
+                  setMessage("履歴をすべて削除しました。");
                 }}
               >
                 全削除
@@ -55,6 +67,7 @@ export default function HistoryPage() {
         ) : (
           <p>まだ対戦履歴はありません。</p>
         )}
+        {message && <p role="status">{message}</p>}
         <p>
           <Link href="/play">プレイへ戻る →</Link>
         </p>

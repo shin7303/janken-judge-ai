@@ -18,7 +18,7 @@ const fingers: ReadonlyArray<readonly [number, number]> = [
 export function classifyLandmarks(
   landmarks: Landmark[],
 ): LandmarkClassification {
-  if (landmarks.length < 21)
+  if (landmarks.length < ROUND_CONFIG.expectedHandLandmarks)
     return { gesture: "UNKNOWN", score: 0, extendedFingers: 0 };
   const palm = Math.max(Math.abs(landmarks[0].y - landmarks[9].y), 0.001);
   const extended = fingers.map(
@@ -28,21 +28,30 @@ export function classifyLandmarks(
   );
   const extendedFingers = extended.filter(Boolean).length;
   const gesture: Gesture =
-    extendedFingers >= 4
+    extendedFingers >= ROUND_CONFIG.paperMinExtendedFingers
       ? "PAPER"
       : extended[0] && extended[1] && !extended[2] && !extended[3]
         ? "SCISSORS"
-        : extendedFingers <= 1
+        : extendedFingers <= ROUND_CONFIG.rockMaxExtendedFingers
           ? "ROCK"
           : "UNKNOWN";
   const score =
     gesture === "PAPER"
-      ? Math.min(0.9, 0.58 + extendedFingers * 0.08)
+      ? Math.min(
+          ROUND_CONFIG.paperLandmarkScoreMax,
+          ROUND_CONFIG.paperLandmarkScoreBase +
+            extendedFingers * ROUND_CONFIG.paperLandmarkScorePerFinger,
+        )
       : gesture === "SCISSORS"
-        ? 0.76
+        ? ROUND_CONFIG.scissorsLandmarkScore
         : gesture === "ROCK"
-          ? Math.min(0.86, 0.66 + (4 - extendedFingers) * 0.05)
-          : 0.35;
+          ? Math.min(
+              ROUND_CONFIG.rockLandmarkScoreMax,
+              ROUND_CONFIG.rockLandmarkScoreBase +
+                (ROUND_CONFIG.paperMinExtendedFingers - extendedFingers) *
+                  ROUND_CONFIG.rockLandmarkScorePerClosedFinger,
+            )
+          : ROUND_CONFIG.unknownLandmarkScore;
   return { gesture, score, extendedFingers };
 }
 
@@ -70,7 +79,11 @@ export function blendGesture(
     return {
       ...fallback,
       gesture: modelGesture,
-      score: Math.min(0.99, (modelScore + fallback.score) / 2 + 0.12),
+      score: Math.min(
+        ROUND_CONFIG.blendedGestureScoreMax,
+        (modelScore + fallback.score) / 2 +
+          ROUND_CONFIG.blendedGestureAgreementBonus,
+      ),
     };
   return modelScore >= ROUND_CONFIG.modelOverrideScore
     ? {

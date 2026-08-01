@@ -31,7 +31,9 @@ export function assignHandsToPlayers<T extends HandDetection>(
   if (detections.length === 1) {
     const detection = detections[0];
     const player: PlayerId =
-      detection.centroid.x < 0.5 ? "PLAYER_A" : "PLAYER_B";
+      detection.centroid.x < ROUND_CONFIG.playerRoiSplitX
+        ? "PLAYER_A"
+        : "PLAYER_B";
     return {
       hands: [
         {
@@ -50,8 +52,10 @@ export function assignHandsToPlayers<T extends HandDetection>(
     .sort((a, b) => a.centroid.x - b.centroid.x)
     .slice(0, 2);
   const sameRegion =
-    (left.centroid.x < 0.5 && right.centroid.x < 0.5) ||
-    (left.centroid.x >= 0.5 && right.centroid.x >= 0.5);
+    (left.centroid.x < ROUND_CONFIG.playerRoiSplitX &&
+      right.centroid.x < ROUND_CONFIG.playerRoiSplitX) ||
+    (left.centroid.x >= ROUND_CONFIG.playerRoiSplitX &&
+      right.centroid.x >= ROUND_CONFIG.playerRoiSplitX);
   const tooClose =
     Math.abs(right.centroid.x - left.centroid.x) < config.minimumHandSeparation;
   const hasHistory = previous.PLAYER_A && previous.PLAYER_B;
