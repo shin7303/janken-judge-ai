@@ -14,6 +14,13 @@ import {
   initialRoundState,
   roundMachine,
 } from "@/features/round/round-machine";
+import { selectRecorderOptions } from "@/features/replay/media-recorder";
+import {
+  REPLAY_METADATA_KEY,
+  REPLAY_UNAVAILABLE_KEY,
+  REPLAY_URL_KEY,
+  revokeStoredReplay,
+} from "@/features/replay/storage";
 import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
 
 const players: PlayerId[] = ["PLAYER_A", "PLAYER_B"];
@@ -23,6 +30,7 @@ export default function PlayPage() {
   const stream = useRef<MediaStream | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const replayChunks = useRef<Blob[]>([]);
+  const recordingStartedAt = useRef<number | null>(null);
   const [state, dispatch] = useReducer(roundMachine, initialRoundState);
   const [tabActive, setTabActive] = useState(true);
 
@@ -92,24 +100,35 @@ export default function PlayPage() {
   }, []);
 
   const finishRound = useCallback(() => {
-    if (state.ponTimestampMs === null) return;
+    const ponTimestampMs = state.ponTimestampMs;
+    if (ponTimestampMs === null) return;
     dispatch({ type: "FINALIZE" });
-    const result = analyzeRound(observations.current, state.ponTimestampMs);
+    const result = analyzeRound(observations.current, ponTimestampMs);
     sessionStorage.setItem("janken-last-result", JSON.stringify(result));
     const activeRecorder = recorder.current;
     if (activeRecorder?.state === "recording") {
       activeRecorder.onstop = () => {
         if (replayChunks.current.length) {
-          const previousUrl = sessionStorage.getItem("janken-last-replay");
-          if (previousUrl?.startsWith("blob:"))
-            URL.revokeObjectURL(previousUrl);
           sessionStorage.setItem(
-            "janken-last-replay",
+            REPLAY_URL_KEY,
             URL.createObjectURL(
               new Blob(replayChunks.current, {
                 type: activeRecorder.mimeType || "video/webm",
               }),
             ),
+          );
+          if (recordingStartedAt.current !== null)
+            sessionStorage.setItem(
+              REPLAY_METADATA_KEY,
+              JSON.stringify({
+                recordingStartedAtMs: recordingStartedAt.current,
+                ponOffsetMs: ponTimestampMs - recordingStartedAt.current,
+              }),
+            );
+        } else {
+          sessionStorage.setItem(
+            REPLAY_UNAVAILABLE_KEY,
+            "録画データを作成できませんでした。判定タイムラインをご確認ください。",
           );
         }
         dispatch({ type: "COMPLETE" });
@@ -175,19 +194,37 @@ export default function PlayPage() {
     if (state.phase !== "CAMERA_READY") return;
     observations.current = [];
     replayChunks.current = [];
-    const previousUrl = sessionStorage.getItem("janken-last-replay");
-    if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
-    sessionStorage.removeItem("janken-last-replay");
+    recordingStartedAt.current = null;
+    revokeStoredReplay(sessionStorage);
+    sessionStorage.removeItem(REPLAY_UNAVAILABLE_KEY);
     if (stream.current && "MediaRecorder" in window) {
       try {
-        recorder.current = new MediaRecorder(stream.current);
+        recorder.current = new MediaRecorder(
+          stream.current,
+          selectRecorderOptions(MediaRecorder),
+        );
         recorder.current.ondataavailable = (event) => {
           if (event.data.size) replayChunks.current.push(event.data);
         };
+        recorder.current.onerror = () =>
+          sessionStorage.setItem(
+            REPLAY_UNAVAILABLE_KEY,
+            "このブラウザではリプレイ録画を継続できませんでした。判定は続行します。",
+          );
+        recordingStartedAt.current = performance.now();
         recorder.current.start();
       } catch {
         recorder.current = null;
+        sessionStorage.setItem(
+          REPLAY_UNAVAILABLE_KEY,
+          "このブラウザではリプレイ録画を開始できません。判定のみ続行します。",
+        );
       }
+    } else {
+      sessionStorage.setItem(
+        REPLAY_UNAVAILABLE_KEY,
+        "このブラウザはMediaRecorderに対応していないため、判定のみ行います。",
+      );
     }
     dispatch({ type: "START" });
   };

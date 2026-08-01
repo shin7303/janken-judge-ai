@@ -154,3 +154,21 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (44 tests), `format:check`, `test:e2e` (2 browser tests), and `build` passed locally.
+
+## 2026-08-01 — Replay controls and evidence timeline
+
+- Added portable MediaRecorder option selection with browser-default fallback and non-fatal messages for unsupported, failed, or empty recordings.
+- Stored the recording-to-PON offset with the local Blob URL so replay controls can seek to PON, each commitment, and post-commit switch events.
+- Added 0.25×, 0.5×, and 1× playback controls and a pure timeline marker generator covering the observation start, PON, both commitments, switches, and deadline.
+- Kept the evidence timeline and explicit fallback reason available when replay recording is unavailable.
+- Revoked previous replay Object URLs before new rounds and on result-page exit, while removing replay metadata from session storage.
+- Made corrupted result and replay metadata fail closed instead of crashing the result route.
+- Added tests for format selection, metadata validation/cleanup, timeline positions, playback speed, seeking, and replay-less fallback.
+
+### Failures and fixes
+
+- The first typecheck rejected a deliberately partial `RoundResult` in the ReplayPlayer test. Replaced it with a complete type-checked fixture rather than weakening production types.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (51 tests), `format:check`, `test:e2e` (2 browser tests), and `build` passed locally.

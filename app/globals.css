@@ -458,9 +458,111 @@ h2 {
 }
 .replay-video {
   width: 100%;
-  margin-top: 24px;
+  margin-top: 12px;
   border-radius: 8px;
   background: #172842;
+}
+.result-card {
+  width: min(100%, 860px);
+}
+.replay-panel {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid #dce4e8;
+}
+.replay-panel h2 {
+  margin: 0 0 14px;
+  font-size: 22px;
+}
+.replay-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.replay-controls button {
+  min-width: 58px;
+  min-height: 40px;
+  border: 1px solid #becbd3;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+.replay-controls button.selected {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: white;
+}
+.replay-fallback {
+  padding: 14px;
+  border-radius: 8px;
+  background: #f3f7f9;
+}
+.result-timeline {
+  overflow-x: auto;
+  margin-top: 24px;
+  padding: 8px 26px 2px;
+}
+.result-timeline-track {
+  position: relative;
+  min-width: 560px;
+  height: 128px;
+  border-top: 3px solid #b9c8d0;
+}
+.timeline-marker {
+  position: absolute;
+  top: -9px;
+  display: grid;
+  min-width: 72px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  color: #526579;
+  cursor: pointer;
+  text-align: center;
+}
+.timeline-marker i {
+  width: 14px;
+  height: 14px;
+  margin: 0 auto 7px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #087e91;
+  box-shadow: 0 0 0 1px #087e91;
+}
+.timeline-marker span,
+.timeline-marker small {
+  font-style: normal;
+  white-space: nowrap;
+}
+.timeline-marker span {
+  font-size: 11px;
+  font-weight: 800;
+}
+.timeline-marker small {
+  font-size: 10px;
+}
+.timeline-marker.player-b,
+.timeline-marker.switch {
+  top: 43px;
+}
+.timeline-marker.pon i,
+.timeline-marker.switch i {
+  background: #ed6231;
+  box-shadow: 0 0 0 1px #ed6231;
+}
+.timeline-marker:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.result-reasons {
+  margin-top: 24px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #fff5df;
+}
+.result-reasons p {
+  margin: 4px 0 0 !important;
 }
 .history-list span {
   color: #6d7b8f;
