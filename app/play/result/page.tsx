@@ -27,6 +27,11 @@ export default function ResultPage() {
     return saved ? (JSON.parse(saved) as RoundResult) : null;
   });
   const stored = useRef(false);
+  const [replay] = useState(() =>
+    typeof window === "undefined"
+      ? null
+      : sessionStorage.getItem("janken-last-replay"),
+  );
   useEffect(() => {
     if (result && !stored.current) {
       saveResult(result);
@@ -71,6 +76,11 @@ export default function ResultPage() {
             履歴
           </Link>
         </div>
+        {replay ? (
+          <video className="replay-video" src={replay} controls playsInline />
+        ) : (
+          <p>このブラウザではリプレイを利用できません。</p>
+        )}
       </div>
     </main>
   );

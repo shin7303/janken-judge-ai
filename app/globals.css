@@ -421,6 +421,12 @@ h2 {
   background: #f3f7f9;
   font-size: 12px;
 }
+.replay-video {
+  width: 100%;
+  margin-top: 24px;
+  border-radius: 8px;
+  background: #172842;
+}
 .history-list span {
   color: #6d7b8f;
 }

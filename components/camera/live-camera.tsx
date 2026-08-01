@@ -23,8 +23,10 @@ const wasmUrl =
 
 export function LiveCamera({
   onFrame,
+  onStream,
 }: {
   onFrame?: (hands: LiveHand[]) => void;
+  onStream?: (stream: MediaStream) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const recognizerRef = useRef<GestureRecognizer | null>(null);
@@ -56,6 +58,7 @@ export function LiveCamera({
         audio: false,
       });
       streamRef.current = stream;
+      onStream?.(stream);
       setActive(true);
       if (!videoRef.current) return;
       videoRef.current.srcObject = stream;

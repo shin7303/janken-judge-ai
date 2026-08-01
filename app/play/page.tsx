@@ -8,6 +8,8 @@ import type { FrameObservation } from "@/domain/types";
 
 export default function PlayPage() {
   const observations = useRef<FrameObservation[]>([]);
+  const stream = useRef<MediaStream | null>(null);
+  const recorder = useRef<MediaRecorder | null>(null);
   const [hands, setHands] = useState<LiveHand[]>([]);
   const [phase, setPhase] = useState("手を枠に入れてください");
   const [count, setCount] = useState<number | null>(null);
@@ -31,6 +33,24 @@ export default function PlayPage() {
       return;
     }
     observations.current = [];
+    const chunks: Blob[] = [];
+    if (stream.current && "MediaRecorder" in window) {
+      recorder.current = new MediaRecorder(stream.current);
+      recorder.current.ondataavailable = (event) =>
+        event.data.size && chunks.push(event.data);
+      recorder.current.onstop = () => {
+        sessionStorage.setItem(
+          "janken-last-replay",
+          URL.createObjectURL(
+            new Blob(chunks, {
+              type: recorder.current?.mimeType || "video/webm",
+            }),
+          ),
+        );
+        location.assign("/play/result");
+      };
+      recorder.current.start();
+    }
     let value = 3;
     setCount(value);
     setPhase("カウントダウン");
@@ -42,9 +62,11 @@ export default function PlayPage() {
         setPhase("PON!");
         const pon = performance.now();
         window.setTimeout(() => {
+          recorder.current?.stop();
           const result = analyzeRound(observations.current, pon);
           sessionStorage.setItem("janken-last-result", JSON.stringify(result));
-          location.assign("/play/result");
+          if (recorder.current?.state === "recording") recorder.current.stop();
+          else location.assign("/play/result");
         }, 1200);
         window.clearInterval(timer);
       }
@@ -70,7 +92,12 @@ export default function PlayPage() {
           ラウンドを開始 →
         </button>
       </section>
-      <LiveCamera onFrame={onFrame} />
+      <LiveCamera
+        onFrame={onFrame}
+        onStream={(next) => {
+          stream.current = next;
+        }}
+      />
     </main>
   );
 }
