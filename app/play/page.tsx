@@ -1,79 +1,213 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { LiveCamera, type LiveHand } from "@/components/camera/live-camera";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+  LiveCamera,
+  type LiveCameraDiagnostics,
+  type LiveHand,
+} from "@/components/camera/live-camera";
+import { ROUND_CONFIG } from "@/domain/round-config";
+import type { FrameObservation, PlayerId } from "@/domain/types";
 import { analyzeRound } from "@/features/round/analyze-round";
-import type { FrameObservation } from "@/domain/types";
+import {
+  initialRoundState,
+  roundMachine,
+} from "@/features/round/round-machine";
+import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
+
+const players: PlayerId[] = ["PLAYER_A", "PLAYER_B"];
 
 export default function PlayPage() {
   const observations = useRef<FrameObservation[]>([]);
   const stream = useRef<MediaStream | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
-  const [hands, setHands] = useState<LiveHand[]>([]);
-  const [phase, setPhase] = useState("手を枠に入れてください");
-  const [count, setCount] = useState<number | null>(null);
-  const onFrame = (next: LiveHand[]) => {
-    setHands(next);
+  const replayChunks = useRef<Blob[]>([]);
+  const [state, dispatch] = useReducer(roundMachine, initialRoundState);
+  const [tabActive, setTabActive] = useState(true);
+
+  const onFrame = useCallback((next: LiveHand[]) => {
+    const timestampMs = next[0]?.timestampMs ?? performance.now();
     observations.current.push(
-      ...next.map((hand) => ({
-        timestampMs: hand.timestampMs,
-        playerId: hand.player,
-        gesture: hand.gesture,
-        gestureScore: hand.score,
-        handVisible: true,
-        centroid: hand.centroid,
-        assignmentConfidence: hand.assignmentConfidence,
-        crossed: hand.crossed,
-      })),
+      ...players.map((playerId) => {
+        const hand = next.find((item) => item.player === playerId);
+        return hand
+          ? {
+              timestampMs: hand.timestampMs,
+              playerId,
+              gesture: hand.gesture,
+              gestureScore: hand.score,
+              handVisible: true,
+              centroid: hand.centroid,
+              assignmentConfidence: hand.assignmentConfidence,
+              crossed: hand.crossed,
+            }
+          : {
+              timestampMs,
+              playerId,
+              gesture: "UNKNOWN" as const,
+              gestureScore: 0,
+              handVisible: false,
+              centroid: null,
+              assignmentConfidence: 0,
+            };
+      }),
     );
-    observations.current = observations.current.slice(-120);
-  };
-  const startRound = () => {
-    if (hands.length !== 2 || hands[0].player === hands[1].player) {
-      setPhase("左右に一つずつ手を入れてください");
-      return;
-    }
-    observations.current = [];
-    const chunks: Blob[] = [];
-    if (stream.current && "MediaRecorder" in window) {
-      recorder.current = new MediaRecorder(stream.current);
-      recorder.current.ondataavailable = (event) =>
-        event.data.size && chunks.push(event.data);
-      recorder.current.onstop = () => {
-        sessionStorage.setItem(
-          "janken-last-replay",
-          URL.createObjectURL(
-            new Blob(chunks, {
-              type: recorder.current?.mimeType || "video/webm",
-            }),
-          ),
-        );
+    observations.current = observations.current.slice(-240);
+  }, []);
+
+  const onDiagnostics = useCallback(
+    (diagnostics: LiveCameraDiagnostics) => {
+      const roundInProgress = ["COUNTDOWN", "PON", "OBSERVING"].includes(
+        state.phase,
+      );
+      const readiness = evaluateSetupReadiness({
+        cameraAndModelReady: diagnostics.running,
+        hands: diagnostics.hands,
+        inferenceFps: diagnostics.fps,
+        tabActive,
+      });
+      dispatch({
+        type: "CAMERA_STATUS",
+        ready: roundInProgress ? diagnostics.running : readiness.ready,
+      });
+    },
+    [state.phase, tabActive],
+  );
+
+  useEffect(() => {
+    if (!("visibilityState" in document)) return;
+    const update = () => {
+      const active = document.visibilityState === "visible";
+      setTabActive(active);
+      if (!active)
+        dispatch({
+          type: "ABORT",
+          reason:
+            "タブが非表示になったため、判定を中断しました。再試合してください。",
+        });
+    };
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+
+  const finishRound = useCallback(() => {
+    if (state.ponTimestampMs === null) return;
+    dispatch({ type: "FINALIZE" });
+    const result = analyzeRound(observations.current, state.ponTimestampMs);
+    sessionStorage.setItem("janken-last-result", JSON.stringify(result));
+    const activeRecorder = recorder.current;
+    if (activeRecorder?.state === "recording") {
+      activeRecorder.onstop = () => {
+        if (replayChunks.current.length) {
+          const previousUrl = sessionStorage.getItem("janken-last-replay");
+          if (previousUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(previousUrl);
+          sessionStorage.setItem(
+            "janken-last-replay",
+            URL.createObjectURL(
+              new Blob(replayChunks.current, {
+                type: activeRecorder.mimeType || "video/webm",
+              }),
+            ),
+          );
+        }
+        dispatch({ type: "COMPLETE" });
         location.assign("/play/result");
       };
-      recorder.current.start();
+      activeRecorder.stop();
+    } else {
+      dispatch({ type: "COMPLETE" });
+      location.assign("/play/result");
     }
-    let value = 3;
-    setCount(value);
-    setPhase("カウントダウン");
-    const timer = window.setInterval(() => {
-      value -= 1;
-      if (value > 0) setCount(value);
-      else if (value === 0) {
-        setCount(null);
-        setPhase("PON!");
-        const pon = performance.now();
-        window.setTimeout(() => {
-          recorder.current?.stop();
-          const result = analyzeRound(observations.current, pon);
-          sessionStorage.setItem("janken-last-result", JSON.stringify(result));
-          if (recorder.current?.state === "recording") recorder.current.stop();
-          else location.assign("/play/result");
-        }, 1200);
-        window.clearInterval(timer);
+  }, [state.ponTimestampMs]);
+
+  useEffect(() => {
+    if (state.phase === "COUNTDOWN") {
+      const timer = window.setTimeout(
+        () =>
+          dispatch({
+            type: "COUNTDOWN_TICK",
+            timestampMs: performance.now(),
+          }),
+        1000,
+      );
+      return () => window.clearTimeout(timer);
+    }
+    if (state.phase === "PON") {
+      const timer = window.setTimeout(
+        () => dispatch({ type: "BEGIN_OBSERVING" }),
+        250,
+      );
+      return () => window.clearTimeout(timer);
+    }
+    if (state.phase === "OBSERVING") {
+      const elapsed = performance.now() - (state.ponTimestampMs ?? 0);
+      const timer = window.setTimeout(
+        finishRound,
+        Math.max(0, ROUND_CONFIG.postPonDeadlineMs - elapsed),
+      );
+      return () => window.clearTimeout(timer);
+    }
+  }, [finishRound, state.countdown, state.phase, state.ponTimestampMs]);
+
+  useEffect(() => {
+    if (state.phase !== "ABORTED") return;
+    const activeRecorder = recorder.current;
+    if (activeRecorder?.state === "recording") {
+      activeRecorder.onstop = null;
+      activeRecorder.stop();
+    }
+  }, [state.phase]);
+
+  useEffect(
+    () => () => {
+      const activeRecorder = recorder.current;
+      if (activeRecorder?.state === "recording") {
+        activeRecorder.onstop = null;
+        activeRecorder.stop();
       }
-    }, 1000);
+    },
+    [],
+  );
+
+  const startRound = () => {
+    if (state.phase !== "CAMERA_READY") return;
+    observations.current = [];
+    replayChunks.current = [];
+    const previousUrl = sessionStorage.getItem("janken-last-replay");
+    if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
+    sessionStorage.removeItem("janken-last-replay");
+    if (stream.current && "MediaRecorder" in window) {
+      try {
+        recorder.current = new MediaRecorder(stream.current);
+        recorder.current.ondataavailable = (event) => {
+          if (event.data.size) replayChunks.current.push(event.data);
+        };
+        recorder.current.start();
+      } catch {
+        recorder.current = null;
+      }
+    }
+    dispatch({ type: "START" });
   };
+
+  const phaseLabel =
+    state.phase === "COUNTDOWN"
+      ? String(state.countdown)
+      : state.phase === "PON"
+        ? "PON!"
+        : state.phase === "OBSERVING" || state.phase === "FINALIZING"
+          ? "判定中"
+          : state.phase === "CAMERA_READY"
+            ? "準備OK"
+            : state.phase === "ABORTED"
+              ? (state.abortReason ?? "判定を中断しました")
+              : "手を枠に入れてください";
+  const roundActive = ["COUNTDOWN", "PON", "OBSERVING", "FINALIZING"].includes(
+    state.phase,
+  );
+
   return (
     <main className="setup-page">
       <header className="demo-header">
@@ -86,16 +220,28 @@ export default function PlayPage() {
       </header>
       <section className="setup-intro">
         <p className="eyebrow">LIVE ROUND</p>
-        <h1>{count ? `${count}` : phase}</h1>
-        <p>
-          二人の手が検出されたら開始できます。PON後は自動で時系列解析します。
-        </p>
-        <button className="button button-primary" onClick={startRound}>
-          ラウンドを開始 →
-        </button>
+        <h1>{phaseLabel}</h1>
+        <p>二人の手と推論品質が安定すると開始できます。</p>
+        {state.phase === "ABORTED" ? (
+          <button
+            className="button button-primary"
+            onClick={() => dispatch({ type: "RESET", cameraReady: false })}
+          >
+            再試合の準備 →
+          </button>
+        ) : (
+          <button
+            className="button button-primary"
+            onClick={startRound}
+            disabled={state.phase !== "CAMERA_READY"}
+          >
+            {roundActive ? "ラウンド進行中" : "ラウンドを開始 →"}
+          </button>
+        )}
       </section>
       <LiveCamera
         onFrame={onFrame}
+        onDiagnostics={onDiagnostics}
         onStream={(next) => {
           stream.current = next;
         }}

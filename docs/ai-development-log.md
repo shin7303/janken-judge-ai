@@ -96,3 +96,22 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (25 tests), `format:check`, `test:e2e`, and `build` passed locally.
+
+## 2026-08-01 — Interruptible live-round state machine
+
+- Replaced ad hoc interval-driven round progress with a pure reducer covering idle, camera-ready, countdown, PON, observing, finalizing, result, and aborted states.
+- Gated round start on live camera/model, two-hand, confidence, FPS, and visible-tab diagnostics; duplicate start events are ignored by the reducer.
+- Added feature-detected tab visibility interruption and camera-loss interruption while allowing transient gesture or hand misses to flow into conservative quality analysis.
+- Recorded explicit missing-hand observations instead of silently omitting a player, preserving evidence for `INSUFFICIENT_DATA`.
+- Scoped countdown, PON, observation-deadline, and recorder cleanup to React effect lifetimes so navigation or interruption disposes pending work.
+- Revoked the previous replay Object URL before a new round and avoided failing the round when MediaRecorder construction is unavailable.
+
+### Failures and fixes
+
+- The first format check found the rewritten play page and reducer; formatted both before final verification.
+- An adversarial pass found that removing the previous replay key before reading it would leak its Object URL. Reordered cleanup to revoke first.
+- The same pass found that applying full setup readiness during an active round would abort on a single missed hand. Active rounds now abort only when the camera/model actually stops or the tab becomes hidden; observation quality handles transient misses.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (31 tests), `format:check`, `test:e2e`, and `build` passed locally.
