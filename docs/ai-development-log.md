@@ -266,3 +266,8 @@
 
 - `pnpm audit --prod` reports no known vulnerabilities.
 - `format:check`, `lint`, `typecheck`, `test` (61 tests), `test:e2e` (6 browser tests), and `build` pass without the optional image optimizer.
+
+### CI follow-up
+
+- The first pushed CI run passed every step but warned that the v4 checkout, Node setup, and pnpm setup actions targeted GitHub's deprecated Node 20 action runtime.
+- Verified the current releases from each official action repository, then upgraded to `actions/checkout@v7`, `actions/setup-node@v7`, and `pnpm/action-setup@v6` for a warning-free rerun.
