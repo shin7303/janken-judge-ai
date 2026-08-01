@@ -1,4 +1,5 @@
 import type { Gesture, ValidGesture } from "@/domain/types";
+import { ROUND_CONFIG } from "@/domain/round-config";
 
 export type Landmark = { x: number; y: number };
 export type LandmarkClassification = {
@@ -21,7 +22,9 @@ export function classifyLandmarks(
     return { gesture: "UNKNOWN", score: 0, extendedFingers: 0 };
   const palm = Math.max(Math.abs(landmarks[0].y - landmarks[9].y), 0.001);
   const extended = fingers.map(
-    ([tip, pip]) => landmarks[tip].y < landmarks[pip].y - palm * 0.14,
+    ([tip, pip]) =>
+      landmarks[tip].y <
+      landmarks[pip].y - palm * ROUND_CONFIG.landmarkExtensionRatio,
   );
   const extendedFingers = extended.filter(Boolean).length;
   const gesture: Gesture =
@@ -69,7 +72,7 @@ export function blendGesture(
       gesture: modelGesture,
       score: Math.min(0.99, (modelScore + fallback.score) / 2 + 0.12),
     };
-  return modelScore >= 0.82
+  return modelScore >= ROUND_CONFIG.modelOverrideScore
     ? {
         gesture: modelGesture,
         score: modelScore,

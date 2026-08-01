@@ -12,6 +12,9 @@ import { ROUND_CONFIG } from "@/domain/round-config";
 const initialDiagnostics: LiveCameraDiagnostics = {
   running: false,
   fps: 0,
+  inferenceMs: 0,
+  executionMode: null,
+  qualityProfile: "standard",
   hands: [],
 };
 

@@ -131,3 +131,26 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (40 tests), `format:check`, and `build` passed locally.
+
+## 2026-08-01 — Worker inference and adaptive performance
+
+- Moved MediaPipe recognition to a module Web Worker using transferable `ImageBitmap` frames and typed INIT/FRAME/DISPOSE and READY/OBSERVATION/ERROR messages.
+- Added a tested latest-frame queue that permits one in-flight frame, retains only the newest pending frame, and closes replaced or disposed bitmaps.
+- Preferred `requestVideoFrameCallback`, detected duplicate video timestamps, capped capture at the centralized inference interval, and retained a detected main-thread compatibility fallback.
+- Added worker initialization timeout, runtime recovery messaging, camera-disconnection handling, and disposal for callbacks, queued frames, recognizers, Workers, streams, and pending initialization.
+- Added inference duration, execution mode, FPS, and reduced-resolution status to the camera diagnostics.
+- Added a pure adaptive-quality controller that lowers capture constraints to 480×360 only after three consecutive low-FPS windows.
+- Moved MediaPipe and landmark decision thresholds into the shared configuration module.
+- Self-hosted the version-matched SIMD and non-SIMD MediaPipe WASM loaders/binaries and added immutable model/runtime cache headers, removing the runtime CDN dependency.
+- Added a browser E2E with deterministic MediaStream, video-frame, ImageBitmap, and Worker doubles to verify start, protocol wiring, and stop cleanup.
+
+### Failures and fixes
+
+- The first Worker build verification passed, but an adversarial fake-camera E2E exposed that Next dev rejected the test's `127.0.0.1` origin. Added the loopback host to Next's development-only `allowedDevOrigins` configuration.
+- Chromium's command-line fake camera granted permission but never resolved a stream in this environment. A Canvas stream progressed further, but real MediaPipe WASM caused the constrained headless renderer to become unresponsive in both dev and production modes.
+- Replaced that unstable environment-dependent test with deterministic browser doubles while retaining production bundling and pure queue tests. Real MediaPipe Worker execution remains an explicit physical-device verification item.
+- Copying the versioned Emscripten loaders caused ESLint to inspect third-party generated code. Excluded only `public/mediapipe/**` from lint and formatting while continuing to build and serve it.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (44 tests), `format:check`, `test:e2e` (2 browser tests), and `build` passed locally.

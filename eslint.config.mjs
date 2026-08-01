@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Versioned Emscripten output copied from @mediapipe/tasks-vision.
+    "public/mediapipe/**",
   ]),
 ]);
 
