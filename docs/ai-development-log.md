@@ -237,3 +237,16 @@
 ### Verification
 
 - `format:check`, `lint`, `typecheck`, `test` (61 tests), `test:e2e` (6 browser tests), and `build` passed locally after clean-process verification.
+
+## 2026-08-01 — Production deployment verification
+
+- Deployed the committed application to the existing Vercel project and aliased the ready deployment to `https://janken-judge-ai.vercel.app`.
+- Confirmed HTTP 200 responses for `/`, `/demo`, `/play/setup`, and `/opengraph-image.png` on the production alias.
+- Confirmed `Permissions-Policy: camera=(self), microphone=()`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin` on the public HTML response.
+- Confirmed immutable one-year caching for the self-hosted gesture model.
+- Confirmed absolute Open Graph and Twitter image metadata resolves to the production alias, including image dimensions and Japanese product metadata.
+
+### Remaining physical-device verification
+
+- Real MediaPipe camera inference, recording formats, camera stop indicators, audio, and layout still require manual checks on Windows Chrome, macOS Chrome/Safari, Android Chrome, and iPhone Safari. These cannot be truthfully simulated as completed by the current headless environment.
+- A real product screenshot remains part of that physical release pass because both supported headless screenshot paths stopped in the constrained renderer; the generated OGP visual is used as the current repository preview.
