@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LiveCamera } from "@/components/camera/live-camera";
+import { SetupCamera } from "@/components/setup/setup-camera";
 
 export default function SetupPage() {
   return (
@@ -21,12 +21,7 @@ export default function SetupPage() {
           左右それぞれの枠に、手首から指先までを入れてください。開始ボタンを押すまでカメラは起動しません。
         </p>
       </section>
-      <LiveCamera />
-      <div className="camera-actions setup-next">
-        <Link className="button button-primary" href="/play">
-          認識できたらラウンドへ →
-        </Link>
-      </div>
+      <SetupCamera />
     </main>
   );
 }

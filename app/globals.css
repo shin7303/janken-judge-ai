@@ -786,6 +786,56 @@ h2 {
   color: #718095;
   font-size: 11px;
 }
+.setup-diagnostics {
+  display: grid;
+  max-width: 900px;
+  margin: 18px auto 0;
+  padding: 20px 22px;
+  grid-template-columns: minmax(180px, 0.7fr) 1.3fr;
+  gap: 20px;
+  border: 1px solid #d5e1e2;
+  border-radius: 10px;
+  background: #fff;
+}
+.setup-diagnostics .eyebrow {
+  margin-bottom: 6px;
+}
+.setup-diagnostics h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.setup-diagnostics ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+.setup-diagnostics li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #718095;
+  font-size: 13px;
+}
+.setup-diagnostics li span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf1f3;
+  font-weight: 900;
+}
+.setup-diagnostics li[data-passed="true"] {
+  color: #087e91;
+  font-weight: 700;
+}
+.setup-diagnostics li[data-passed="true"] span {
+  background: #dff3ef;
+}
 .orientation-hint {
   display: none;
   align-items: flex-start;
@@ -897,6 +947,12 @@ h2 {
   }
   .camera-actions .button {
     justify-content: center;
+  }
+  .setup-diagnostics {
+    grid-template-columns: 1fr;
+  }
+  .setup-diagnostics ul {
+    grid-template-columns: 1fr;
   }
   .setup-intro {
     margin-top: 44px;

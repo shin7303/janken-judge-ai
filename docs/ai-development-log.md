@@ -60,3 +60,21 @@
 
 - `lint`, `typecheck`, `test` (16 unit tests), `format:check`, `test:e2e`, and `build` passed locally.
 - The production build prerendered `/`, `/demo`, `/history`, `/play`, `/play/result`, and `/play/setup` successfully.
+
+## 2026-08-01 — Setup readiness diagnostics
+
+- Added a pure setup-readiness evaluator backed by the shared gesture-confidence and minimum-FPS thresholds.
+- Reported live camera state, recognized hands, and inference FPS to the setup flow without moving diagnosis logic into the React camera component.
+- Added checks for the camera/model, one hand in each player region, gesture confidence, inference performance, and active-tab state.
+- Kept navigation to the live round disabled until all five checks pass, with a feature-detected Page Visibility listener and a visible per-condition status list.
+- Added unit coverage for ready, duplicate-region, low-confidence, low-FPS, and hidden-tab inputs, plus a component test for gated navigation.
+
+### Failures and fixes
+
+- The first typecheck rejected a readonly test fixture because the evaluator input unnecessarily required a mutable array. Changed the pure function contract to accept readonly observations.
+- The first format check found one unformatted component test. Formatted the file and re-ran the complete check set.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (20 tests), `format:check`, `test:e2e`, and `build` passed locally.
+- The mobile E2E confirmed that the new diagnostics panel does not introduce horizontal overflow at the covered portrait and landscape sizes.

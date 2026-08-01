@@ -11,6 +11,11 @@ export type LiveHand = {
   score: number;
   timestampMs: number;
 };
+export type LiveCameraDiagnostics = {
+  running: boolean;
+  fps: number;
+  hands: LiveHand[];
+};
 type Hand = LiveHand & { label: string };
 const gestureNames = {
   ROCK: "グー",
@@ -24,9 +29,11 @@ const wasmUrl =
 export function LiveCamera({
   onFrame,
   onStream,
+  onDiagnostics,
 }: {
   onFrame?: (hands: LiveHand[]) => void;
   onStream?: (stream: MediaStream) => void;
+  onDiagnostics?: (diagnostics: LiveCameraDiagnostics) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const recognizerRef = useRef<GestureRecognizer | null>(null);
@@ -38,6 +45,9 @@ export function LiveCamera({
   const [fps, setFps] = useState(0);
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
+  useEffect(() => {
+    onDiagnostics?.({ running: active, fps, hands });
+  }, [active, fps, hands, onDiagnostics]);
   const release = useCallback(() => {
     operationRef.current += 1;
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
