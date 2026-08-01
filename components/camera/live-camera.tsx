@@ -62,11 +62,13 @@ export function LiveCamera({
   onStream,
   onDiagnostics,
   mirrored = true,
+  variant = "diagnostic",
 }: {
   onFrame?: (hands: LiveHand[]) => void;
   onStream?: (stream: MediaStream) => void;
   onDiagnostics?: (diagnostics: LiveCameraDiagnostics) => void;
   mirrored?: boolean;
+  variant?: "compact" | "diagnostic";
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const recognizerRef = useRef<GestureRecognizer | null>(null);
@@ -185,7 +187,7 @@ export function LiveCamera({
     if (active || starting) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus(
-        "このブラウザではカメラを利用できません。対応ブラウザで開くか、デモをお試しください。",
+        "このブラウザではカメラを利用できません。対応ブラウザで開いてください。",
       );
       return;
     }
@@ -532,7 +534,7 @@ export function LiveCamera({
     }
   };
   return (
-    <section className="camera-shell">
+    <section className={`camera-shell camera-shell-${variant}`}>
       <div className="camera-stage">
         <video
           ref={videoRef}
@@ -544,39 +546,48 @@ export function LiveCamera({
         <div className="roi roi-b">PLAYER B</div>
         {!active && <div className="camera-empty">CAMERA OFF</div>}
       </div>
-      <div className="camera-toolbar">
-        <div>
-          <b>状態</b>
-          <span role="status" aria-live="polite">
-            {status}
-          </span>
+      {variant === "compact" ? (
+        <p className="camera-live-status" role="status" aria-live="polite">
+          <span>{status}</span>
+          <b data-execution-mode={executionMode ?? "pending"}>
+            {fps ? `${fps} FPS` : "準備中"}
+          </b>
+        </p>
+      ) : (
+        <div className="camera-toolbar">
+          <div>
+            <b>状態</b>
+            <span role="status" aria-live="polite">
+              {status}
+            </span>
+          </div>
+          <div>
+            <b>推論性能</b>
+            <span>
+              {fps ? `${fps} FPS` : "—"}
+              {inferenceMs ? ` / ${inferenceMs}ms` : ""}
+              {executionMode === "worker"
+                ? " / Worker"
+                : executionMode === "main-thread"
+                  ? " / 互換モード"
+                  : ""}
+              {qualityProfile === "reduced" ? " / 低解像度" : ""}
+            </span>
+          </div>
+          <div>
+            <b>明るさ</b>
+            <span>
+              {classifyBrightness(brightness) === "dark"
+                ? "暗めです"
+                : classifyBrightness(brightness) === "bright"
+                  ? "明るすぎる可能性があります"
+                  : classifyBrightness(brightness) === "good"
+                    ? "良好"
+                    : "測定待ち"}
+            </span>
+          </div>
         </div>
-        <div>
-          <b>推論性能</b>
-          <span>
-            {fps ? `${fps} FPS` : "—"}
-            {inferenceMs ? ` / ${inferenceMs}ms` : ""}
-            {executionMode === "worker"
-              ? " / Worker"
-              : executionMode === "main-thread"
-                ? " / 互換モード"
-                : ""}
-            {qualityProfile === "reduced" ? " / 低解像度" : ""}
-          </span>
-        </div>
-        <div>
-          <b>明るさ</b>
-          <span>
-            {classifyBrightness(brightness) === "dark"
-              ? "暗めです"
-              : classifyBrightness(brightness) === "bright"
-                ? "明るすぎる可能性があります"
-                : classifyBrightness(brightness) === "good"
-                  ? "良好"
-                  : "測定待ち"}
-          </span>
-        </div>
-      </div>
+      )}
       <div className="hand-readings">
         {(["PLAYER_A", "PLAYER_B"] as const).map((player) => {
           const hand = hands.find((item) => item.player === player);
@@ -592,27 +603,35 @@ export function LiveCamera({
         })}
       </div>
       <div className="camera-actions">
-        <label className="camera-select">
-          カメラ
-          <select
-            value={selectedDeviceId}
-            disabled={active || starting || videoDevices.length === 0}
-            onChange={(event) => setSelectedDeviceId(event.target.value)}
-          >
-            <option value="">自動選択</option>
-            {videoDevices.map((device, index) => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `カメラ ${index + 1}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        {variant === "diagnostic" && (
+          <label className="camera-select">
+            カメラ
+            <select
+              value={selectedDeviceId}
+              disabled={active || starting || videoDevices.length === 0}
+              onChange={(event) => setSelectedDeviceId(event.target.value)}
+            >
+              <option value="">自動選択</option>
+              {videoDevices.map((device, index) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `カメラ ${index + 1}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button
           className="button button-primary"
           onClick={start}
           disabled={active || starting}
         >
-          {starting ? "準備中…" : active ? "カメラ使用中" : "カメラを開始 →"}
+          {starting
+            ? "準備中…"
+            : active
+              ? "カメラ使用中"
+              : variant === "compact"
+                ? "カメラを有効にする"
+                : "カメラを開始 →"}
         </button>
         <button
           className="button button-secondary"
@@ -622,13 +641,17 @@ export function LiveCamera({
           停止
         </button>
       </div>
-      <p className="orientation-hint">
-        <span aria-hidden="true">↻</span>
-        スマートフォンは横向きにすると、二人の手を大きく映せます。
-      </p>
-      <p className="camera-privacy">
-        映像はこの端末内で処理され、サーバーへ送信されません。マイクは使用しません。
-      </p>
+      {variant === "diagnostic" && (
+        <>
+          <p className="orientation-hint">
+            <span aria-hidden="true">↻</span>
+            スマートフォンは横向きにすると、二人の手を大きく映せます。
+          </p>
+          <p className="camera-privacy">
+            映像はこの端末内で処理され、サーバーへ送信されません。マイクは使用しません。
+          </p>
+        </>
+      )}
     </section>
   );
 }

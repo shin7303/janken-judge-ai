@@ -6,7 +6,7 @@ const viewports = [
   { width: 844, height: 390 },
 ] as const;
 
-const routes = ["/", "/demo", "/play/setup", "/play", "/history"];
+const routes = ["/", "/settings", "/play", "/history"];
 
 test("primary screens stay usable at adversarial mobile sizes", async ({
   page,
@@ -34,4 +34,17 @@ test("primary screens stay usable at adversarial mobile sizes", async ({
       }
     }
   }
+});
+
+test("the portrait play screen fits its essential UI in one viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/play");
+
+  const dimensions = await page.evaluate(() => ({
+    pageHeight: document.documentElement.scrollHeight,
+    viewportHeight: window.innerHeight,
+  }));
+  expect(dimensions.pageHeight).toBeLessThanOrEqual(dimensions.viewportHeight);
 });

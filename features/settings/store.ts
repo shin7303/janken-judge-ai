@@ -3,6 +3,7 @@ export type PlaySettings = {
   sensitivity: Sensitivity;
   replayEnabled: boolean;
   mirrored: boolean;
+  autoStartEnabled: boolean;
   countdownVolume: number;
 };
 
@@ -12,6 +13,7 @@ export const DEFAULT_SETTINGS: PlaySettings = {
   sensitivity: "standard",
   replayEnabled: true,
   mirrored: true,
+  autoStartEnabled: true,
   countdownVolume: 0.5,
 };
 let memorySnapshot = "";
@@ -41,6 +43,10 @@ export function parseSettings(raw: string | null): PlaySettings {
         typeof value.mirrored === "boolean"
           ? value.mirrored
           : DEFAULT_SETTINGS.mirrored,
+      autoStartEnabled:
+        typeof value.autoStartEnabled === "boolean"
+          ? value.autoStartEnabled
+          : DEFAULT_SETTINGS.autoStartEnabled,
       countdownVolume:
         typeof value.countdownVolume === "number" &&
         Number.isFinite(value.countdownVolume)

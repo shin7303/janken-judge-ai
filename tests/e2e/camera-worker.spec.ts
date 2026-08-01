@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("starts and stops the worker camera pipeline", async ({ page }) => {
-  await page.goto("/play/setup");
+  await page.goto("/play");
   await page.waitForTimeout(1000);
   await page.evaluate(() => {
     class TestWorker {
@@ -95,7 +95,7 @@ test("starts and stops the worker camera pipeline", async ({ page }) => {
       ],
     });
   });
-  const start = page.getByRole("button", { name: /カメラを開始/ });
+  const start = page.getByRole("button", { name: "カメラを有効にする" });
   await expect(start).toBeVisible();
   await start.evaluate((button: HTMLButtonElement) => {
     window.setTimeout(() => button.click(), 0);
@@ -104,9 +104,7 @@ test("starts and stops the worker camera pipeline", async ({ page }) => {
   await expect(page.getByRole("status")).toContainText(
     "二人の手を左右の枠に入れてください",
   );
-  await expect(page.getByText(/Worker/)).toBeVisible();
-  await expect(page.getByLabel("カメラ")).toContainText("テストカメラ");
-
+  await expect(page.locator('[data-execution-mode="worker"]')).toBeVisible();
   const stop = page.getByRole("button", { name: "停止" });
   await stop.evaluate((button: HTMLButtonElement) => button.click());
   await expect(page.getByRole("status")).toContainText("停止しました");

@@ -40,24 +40,21 @@ const result: RoundResult = {
 const activate = (locator: Locator) =>
   locator.evaluate((element: HTMLElement) => element.click());
 
-test("moves from the landing page through normal and late demo evidence", async ({
+test("moves from the landing page directly into the simple play flow", async ({
   page,
 }) => {
   await page.goto("/");
-  await activate(page.getByRole("link", { name: /デモを見る/ }));
-  await expect(page).toHaveURL(/\/demo$/);
-  await expect(page.getByText("問題なし", { exact: true })).toBeVisible();
-  await activate(page.getByRole("button", { name: /遅れて有利な手/ }));
+  await activate(page.getByRole("link", { name: /カメラを始める/ }));
+  await expect(page).toHaveURL(/\/play$/);
   await expect(
-    page.getByText("後出しの可能性あり", { exact: true }),
+    page.getByText(/左右の枠に一人ずつ手を入れてください/),
   ).toBeVisible();
-  await expect(page.getByText("LATE_WINNING_HAND_LARGE_DELAY")).toBeVisible();
 });
 
 test("shows a recoverable explanation when camera permission is denied", async ({
   page,
 }) => {
-  await page.goto("/play/setup");
+  await page.goto("/play");
   await page.evaluate(() => {
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       configurable: true,
@@ -66,27 +63,30 @@ test("shows a recoverable explanation when camera permission is denied", async (
       },
     });
   });
-  await activate(page.getByRole("button", { name: /カメラを開始/ }));
+  await activate(page.getByRole("button", { name: "カメラを有効にする" }));
   await expect(page.getByRole("status")).toContainText("権限が拒否");
   await expect(
-    page.getByRole("button", { name: /カメラを開始/ }),
+    page.getByRole("button", { name: "カメラを有効にする" }),
   ).toBeEnabled();
 });
 
 test("persists and resets local play settings", async ({ page }) => {
-  await page.goto("/play/setup");
+  await page.goto("/settings");
   await page.getByLabel("判定感度").selectOption("lenient");
   await page.getByLabel("カウントダウン音量").selectOption("1");
   await activate(page.getByLabel("スローリプレイを保存"));
   await activate(page.getByLabel("プレビューを左右反転"));
+  await activate(page.getByLabel("両手を検出したら自動開始"));
   await page.reload();
   await expect(page.getByLabel("判定感度")).toHaveValue("lenient");
   await expect(page.getByLabel("カウントダウン音量")).toHaveValue("1");
   await expect(page.getByLabel("スローリプレイを保存")).not.toBeChecked();
   await expect(page.getByLabel("プレビューを左右反転")).not.toBeChecked();
-  await activate(page.getByRole("button", { name: "設定を初期値に戻す" }));
+  await expect(page.getByLabel("両手を検出したら自動開始")).not.toBeChecked();
+  await activate(page.getByRole("button", { name: "初期値に戻す" }));
   await expect(page.getByLabel("判定感度")).toHaveValue("standard");
   await expect(page.getByLabel("カウントダウン音量")).toHaveValue("0.5");
+  await expect(page.getByLabel("両手を検出したら自動開始")).toBeChecked();
 });
 
 test("restores a result, offers replay fallback, saves history, and restarts", async ({

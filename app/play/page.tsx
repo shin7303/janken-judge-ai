@@ -241,7 +241,7 @@ export default function PlayPage() {
     [],
   );
 
-  const startRound = () => {
+  const startRound = useCallback(() => {
     if (state.phase !== "CAMERA_READY") return;
     observations.current = [];
     replayChunks.current = [];
@@ -289,7 +289,18 @@ export default function PlayPage() {
       );
     }
     dispatch({ type: "START" });
-  };
+  }, [settings.countdownVolume, settings.replayEnabled, state.phase]);
+
+  useEffect(() => {
+    if (state.phase !== "CAMERA_READY" || !settings.autoStartEnabled) return;
+    const timer = window.setTimeout(startRound, config.autoStartDelayMs);
+    return () => window.clearTimeout(timer);
+  }, [
+    config.autoStartDelayMs,
+    settings.autoStartEnabled,
+    startRound,
+    state.phase,
+  ]);
 
   const phaseLabel =
     state.phase === "COUNTDOWN"
@@ -303,42 +314,56 @@ export default function PlayPage() {
             : state.phase === "ABORTED"
               ? (state.abortReason ?? "判定を中断しました")
               : "手を枠に入れてください";
-  const roundActive = ["COUNTDOWN", "PON", "OBSERVING", "FINALIZING"].includes(
-    state.phase,
-  );
-
   return (
-    <main className="setup-page">
-      <header className="demo-header">
-        <Link className="brand" href="/">
-          <span className="brand-mark">✦</span>JANKEN JUDGE AI
+    <main className="play-shell">
+      <header className="app-header play-header">
+        <Link className="brand" href="/" aria-label="Janken Judge AI ホーム">
+          <span className="brand-mark" aria-hidden="true">
+            ✦
+          </span>
+          <span>JANKEN JUDGE AI</span>
         </Link>
-        <Link className="back-link" href="/play/setup">
-          ← セットアップ
-        </Link>
+        <nav aria-label="プレイメニュー">
+          <Link className="header-link" href="/settings">
+            設定
+          </Link>
+          <Link className="header-link" href="/history">
+            履歴
+          </Link>
+        </nav>
       </header>
-      <section className="setup-intro">
-        <p className="eyebrow">LIVE ROUND</p>
+      <section className="play-instruction" aria-live="polite">
+        <p className="play-mode">LIVE JANKEN</p>
         <h1>{phaseLabel}</h1>
-        <p>二人の手と推論品質が安定すると開始できます。</p>
+        <p>
+          {state.phase === "IDLE"
+            ? "カメラを有効にして、左右の枠に一人ずつ手を入れてください。"
+            : state.phase === "CAMERA_READY"
+              ? settings.autoStartEnabled
+                ? "両手を確認しました。まもなく自動で始まります。"
+                : "準備できました。開始してください。"
+              : state.phase === "ABORTED"
+                ? "カメラと二人の手を確認して、もう一度お試しください。"
+                : "手を動かさず、判定が終わるまでお待ちください。"}
+        </p>
         {state.phase === "ABORTED" ? (
           <button
             className="button button-primary"
             onClick={() => dispatch({ type: "RESET", cameraReady: false })}
           >
-            再試合の準備 →
+            もう一度準備する
           </button>
         ) : (
-          <button
-            className="button button-primary"
-            onClick={startRound}
-            disabled={state.phase !== "CAMERA_READY"}
-          >
-            {roundActive ? "ラウンド進行中" : "ラウンドを開始 →"}
-          </button>
+          state.phase === "CAMERA_READY" &&
+          !settings.autoStartEnabled && (
+            <button className="button button-primary" onClick={startRound}>
+              じゃんけんを開始
+            </button>
+          )
         )}
       </section>
       <LiveCamera
+        variant="compact"
         onFrame={onFrame}
         onDiagnostics={onDiagnostics}
         onStream={(next) => {
@@ -346,6 +371,9 @@ export default function PlayPage() {
         }}
         mirrored={settings.mirrored}
       />
+      <p className="play-privacy">
+        映像はこの端末内だけで処理します。マイク・アップロードは使用しません。
+      </p>
     </main>
   );
 }

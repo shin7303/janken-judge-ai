@@ -93,8 +93,8 @@ export default function ResultPage() {
       <main className="status-page">
         <div className="status-card">
           <p>結果がありません。</p>
-          <Link className="button button-primary" href="/play/setup">
-            セットアップへ
+          <Link className="button button-primary" href="/play">
+            プレイへ
           </Link>
         </div>
       </main>
@@ -125,10 +125,10 @@ export default function ResultPage() {
           </Link>
           <Link
             className="button button-secondary"
-            href="/play/setup"
+            href="/settings"
             onClick={cleanupReplay}
           >
-            セットアップ
+            設定
           </Link>
           <Link
             className="button button-secondary"

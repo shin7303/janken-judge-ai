@@ -271,3 +271,23 @@
 
 - The first pushed CI run passed every step but warned that the v4 checkout, Node setup, and pnpm setup actions targeted GitHub's deprecated Node 20 action runtime.
 - Verified the current releases from each official action repository, then upgraded to `actions/checkout@v7`, `actions/setup-node@v7`, and `pnpm/action-setup@v6` for a warning-free rerun.
+
+## 2026-08-01 — Simplified automatic-play interface
+
+- Replaced the multi-step setup-first flow with a compact `/play` screen: the user explicitly enables the camera once, then places two hands in the left and right regions.
+- Added the centralized `autoStartDelayMs` (750ms) and enabled automatic countdown by default after the existing stable two-hand readiness checks pass. A manual start control remains available only when the new setting is disabled.
+- Moved sensitivity, countdown volume, automatic start, replay, and mirrored-preview controls to the new `/settings` screen; retained `/play/setup` as a compatible settings entry point.
+- Rebuilt the landing and play UI around the shortest viable path, removed the `/demo` route and fixed scenarios, and removed their unused presentation styles.
+- Made the live play shell use the mobile viewport with compact camera status and controls. The short landscape layout prioritizes the camera and state over explanatory text.
+- Updated the specification, architecture diagram, README, unit tests, and browser tests for the new flow.
+
+### Failures and fixes
+
+- Removing the demo route left a stale Next development type cache that still referenced `/demo`. Cleared only `.next/dev` generated entries and re-ran type checking successfully.
+- The first compact camera E2E still expected the diagnostic Worker label and the old settings reset label. Exposed a non-visual execution-mode data attribute for the deterministic Worker assertion and updated tests to the accessible compact controls.
+- The first mobile review only checked horizontal overflow. Added an explicit 390×844 assertion that the `/play` document height does not exceed the viewport height.
+
+### Verification
+
+- `format:check`, `lint`, `typecheck`, `test` (62 tests), `test:e2e` (7 browser tests), and `build` passed locally.
+- `pnpm audit --prod` reports no known vulnerabilities. The production build statically generates `/`, `/history`, `/play`, `/play/result`, `/play/setup`, and `/settings` (plus the framework not-found and Open Graph image routes).

@@ -7,12 +7,11 @@ describe("Home", () => {
     render(<Home />);
 
     expect(
-      screen.getByRole("heading", { name: /時間で確かめよう/ }),
+      screen.getByRole("heading", { name: /手を入れるだけ/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/映像は端末内で処理/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /GitHub/ })).toHaveAttribute(
-      "href",
-      "https://github.com/shin7303/janken-judge-ai",
-    );
+    expect(screen.getByText(/映像は端末内だけで処理/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /カメラを始める/ }),
+    ).toHaveAttribute("href", "/play");
   });
 });

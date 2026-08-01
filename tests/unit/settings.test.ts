@@ -19,6 +19,7 @@ describe("parseSettings", () => {
           sensitivity: "strict",
           replayEnabled: false,
           mirrored: false,
+          autoStartEnabled: false,
           countdownVolume: 0.8,
         }),
       ),
@@ -26,6 +27,7 @@ describe("parseSettings", () => {
       sensitivity: "strict",
       replayEnabled: false,
       mirrored: false,
+      autoStartEnabled: false,
       countdownVolume: 0.8,
     });
   });

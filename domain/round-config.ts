@@ -1,5 +1,6 @@
 export const ROUND_CONFIG = {
   readyStableMs: 500,
+  autoStartDelayMs: 750,
   countdownMs: 3000,
   countdownTickMs: 1000,
   ponDisplayMs: 250,
