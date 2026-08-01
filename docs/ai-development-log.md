@@ -35,3 +35,8 @@
 - Assigned players by horizontal landmark position and displayed live gesture, confidence, and inference FPS.
 - Stopped tracks and disposed the recognizer when the user stops the camera or leaves the page.
 - Added a landmark-based fallback classifier and blended it with the model score; mirrored display coordinates are converted before player assignment.
+
+## 2026-08-01 — Live round flow
+
+- Connected live observations to a 3, 2, 1 countdown and captured the PON timestamp with `performance.now()`.
+- Added `/play` and `/play/result`; the round collects a bounded observation buffer, runs the pure time-series analysis after the deadline, and displays the result locally.

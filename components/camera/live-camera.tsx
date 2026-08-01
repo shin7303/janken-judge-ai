@@ -3,8 +3,15 @@
 import { FilesetResolver, GestureRecognizer } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { blendGesture } from "@/features/gesture/classify-landmarks";
+import type { Gesture, PlayerId } from "@/domain/types";
 
-type Hand = { player: "PLAYER_A" | "PLAYER_B"; gesture: string; score: number };
+export type LiveHand = {
+  player: PlayerId;
+  gesture: Gesture;
+  score: number;
+  timestampMs: number;
+};
+type Hand = LiveHand & { label: string };
 const gestureNames = {
   ROCK: "グー",
   PAPER: "パー",
@@ -14,7 +21,11 @@ const gestureNames = {
 const wasmUrl =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 
-export function LiveCamera() {
+export function LiveCamera({
+  onFrame,
+}: {
+  onFrame?: (hands: LiveHand[]) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const recognizerRef = useRef<GestureRecognizer | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -90,12 +101,15 @@ export function LiveCamera() {
                 screenX < 0.5 ? "PLAYER_A" : "PLAYER_B";
               return {
                 player,
-                gesture: gestureNames[classification.gesture],
+                gesture: classification.gesture,
+                label: gestureNames[classification.gesture],
                 score: classification.score,
+                timestampMs: now,
               };
             })
             .sort((a, b) => a.player.localeCompare(b.player));
           setHands(found);
+          onFrame?.(found);
           count += 1;
           if (now - started >= 1000) {
             setFps(count);
@@ -139,7 +153,7 @@ export function LiveCamera() {
           return (
             <div key={player}>
               <span>{player}</span>
-              <b>{hand?.gesture ?? "手を検出中"}</b>
+              <b>{hand?.label ?? "手を検出中"}</b>
               <small>
                 {hand ? `信頼度 ${Math.round(hand.score * 100)}%` : "—"}
               </small>

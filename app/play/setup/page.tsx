@@ -22,6 +22,11 @@ export default function SetupPage() {
         </p>
       </section>
       <LiveCamera />
+      <div className="camera-actions setup-next">
+        <Link className="button button-primary" href="/play">
+          認識できたらラウンドへ →
+        </Link>
+      </div>
     </main>
   );
 }
