@@ -10,3 +10,9 @@
 ### Verification
 
 - `lint`, `typecheck`, `test`, `format:check`, and `build` passed locally.
+
+## 2026-08-01 — Deployment routing repair
+
+- Confirmed that `/` returned HTTP 200 in production, while landing-page links to `/demo` and `/play/setup` returned HTTP 404.
+- Added explicit, non-misleading progress pages for both routes so visitors can return to the landing page without encountering a dead end.
+- Re-ran lint, typecheck, unit tests, and the production build. The build now includes both static routes.

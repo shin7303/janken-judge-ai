@@ -377,6 +377,34 @@ h2 {
 .notice p {
   margin: 0;
 }
+.status-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 75% 20%, #8de5ed 0 1%, transparent 30%),
+    linear-gradient(135deg, #fff7df, #e9fbfb);
+}
+.status-card {
+  width: min(100%, 590px);
+  padding: clamp(32px, 7vw, 68px);
+  border: 1px solid #ced9e2;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.93);
+  box-shadow: 14px 17px 0 #bfe8e5;
+}
+.status-card h1 {
+  margin: 0;
+  font-size: clamp(42px, 7vw, 67px);
+  line-height: 1;
+}
+.status-card p:not(.eyebrow) {
+  margin: 28px 0;
+  color: #617087;
+  font-size: 15px;
+  line-height: 1.9;
+}
 @media (max-width: 720px) {
   .hero {
     padding: 19px 21px 48px;
