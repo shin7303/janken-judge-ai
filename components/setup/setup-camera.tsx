@@ -17,6 +17,7 @@ const initialDiagnostics: LiveCameraDiagnostics = {
   inferenceMs: 0,
   executionMode: null,
   qualityProfile: "standard",
+  brightness: null,
   hands: [],
 };
 

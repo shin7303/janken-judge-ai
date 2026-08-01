@@ -9,6 +9,10 @@ import {
   updateAdaptiveQuality,
   type AdaptiveQualityState,
 } from "@/features/camera/adaptive-quality";
+import {
+  averageBrightness,
+  classifyBrightness,
+} from "@/features/camera/brightness";
 import { blendGesture } from "@/features/gesture/classify-landmarks";
 import { LatestFrameQueue } from "@/features/gesture/latest-frame-queue";
 import {
@@ -36,6 +40,7 @@ export type LiveCameraDiagnostics = {
   inferenceMs: number;
   executionMode: "worker" | "main-thread" | null;
   qualityProfile: AdaptiveQualityState["profile"];
+  brightness: number | null;
   hands: LiveHand[];
 };
 type Hand = LiveHand & { label: string };
@@ -75,6 +80,7 @@ export function LiveCamera({
     initialAdaptiveQuality,
   );
   const streamRef = useRef<MediaStream | null>(null);
+  const brightnessCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const operationRef = useRef(0);
   const trackingRef = useRef<PlayerTrackingState>({});
   const [status, setStatus] = useState("カメラを開始してください");
@@ -85,6 +91,9 @@ export function LiveCamera({
     useState<LiveCameraDiagnostics["executionMode"]>(null);
   const [qualityProfile, setQualityProfile] =
     useState<AdaptiveQualityState["profile"]>("standard");
+  const [brightness, setBrightness] = useState<number | null>(null);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
   useEffect(() => {
@@ -94,6 +103,7 @@ export function LiveCamera({
       inferenceMs,
       executionMode,
       qualityProfile,
+      brightness,
       hands,
     });
   }, [
@@ -104,7 +114,31 @@ export function LiveCamera({
     inferenceMs,
     onDiagnostics,
     qualityProfile,
+    brightness,
   ]);
+  const refreshVideoDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const devices = (await navigator.mediaDevices.enumerateDevices()).filter(
+        (device) => device.kind === "videoinput",
+      );
+      setVideoDevices(devices);
+      setSelectedDeviceId((current) =>
+        current && !devices.some((device) => device.deviceId === current)
+          ? ""
+          : current,
+      );
+    } catch {
+      setVideoDevices([]);
+    }
+  }, []);
+  useEffect(() => {
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.addEventListener) return;
+    mediaDevices.addEventListener("devicechange", refreshVideoDevices);
+    return () =>
+      mediaDevices.removeEventListener("devicechange", refreshVideoDevices);
+  }, [refreshVideoDevices]);
   const release = useCallback(() => {
     operationRef.current += 1;
     workerInitResolveRef.current?.(false);
@@ -132,6 +166,7 @@ export function LiveCamera({
     streamRef.current = null;
     trackingRef.current = {};
     adaptiveQualityRef.current = initialAdaptiveQuality;
+    brightnessCanvasRef.current = null;
   }, []);
   const stop = useCallback(() => {
     release();
@@ -140,6 +175,7 @@ export function LiveCamera({
     setInferenceMs(0);
     setExecutionMode(null);
     setQualityProfile("standard");
+    setBrightness(null);
     setActive(false);
     setStarting(false);
     setStatus("カメラを停止しました。再開できます。");
@@ -162,7 +198,9 @@ export function LiveCamera({
         video: {
           width: { ideal: 640 },
           height: { ideal: 480 },
-          facingMode: "user",
+          ...(selectedDeviceId
+            ? { deviceId: { exact: selectedDeviceId } }
+            : { facingMode: "user" }),
         },
         audio: false,
       });
@@ -171,6 +209,7 @@ export function LiveCamera({
         return;
       }
       streamRef.current = stream;
+      void refreshVideoDevices();
       stream.getVideoTracks().forEach((track) =>
         track.addEventListener(
           "ended",
@@ -244,6 +283,24 @@ export function LiveCamera({
             (count * 1000) / (now - measuredSince),
           );
           setFps(measuredFps);
+          try {
+            const canvas =
+              brightnessCanvasRef.current ?? document.createElement("canvas");
+            canvas.width = 16;
+            canvas.height = 12;
+            brightnessCanvasRef.current = canvas;
+            const context = canvas.getContext("2d", {
+              willReadFrequently: true,
+            });
+            if (context && videoRef.current) {
+              context.drawImage(videoRef.current, 0, 0, 16, 12);
+              setBrightness(
+                averageBrightness(context.getImageData(0, 0, 16, 12).data),
+              );
+            }
+          } catch {
+            setBrightness(null);
+          }
           const previousQuality = adaptiveQualityRef.current;
           const nextQuality = updateAdaptiveQuality(
             previousQuality,
@@ -464,6 +521,7 @@ export function LiveCamera({
       setInferenceMs(0);
       setExecutionMode(null);
       setQualityProfile("standard");
+      setBrightness(null);
       setActive(false);
       setStarting(false);
       setStatus(
@@ -506,6 +564,18 @@ export function LiveCamera({
             {qualityProfile === "reduced" ? " / 低解像度" : ""}
           </span>
         </div>
+        <div>
+          <b>明るさ</b>
+          <span>
+            {classifyBrightness(brightness) === "dark"
+              ? "暗めです"
+              : classifyBrightness(brightness) === "bright"
+                ? "明るすぎる可能性があります"
+                : classifyBrightness(brightness) === "good"
+                  ? "良好"
+                  : "測定待ち"}
+          </span>
+        </div>
       </div>
       <div className="hand-readings">
         {(["PLAYER_A", "PLAYER_B"] as const).map((player) => {
@@ -522,6 +592,21 @@ export function LiveCamera({
         })}
       </div>
       <div className="camera-actions">
+        <label className="camera-select">
+          カメラ
+          <select
+            value={selectedDeviceId}
+            disabled={active || starting || videoDevices.length === 0}
+            onChange={(event) => setSelectedDeviceId(event.target.value)}
+          >
+            <option value="">自動選択</option>
+            {videoDevices.map((device, index) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label || `カメラ ${index + 1}`}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           className="button button-primary"
           onClick={start}

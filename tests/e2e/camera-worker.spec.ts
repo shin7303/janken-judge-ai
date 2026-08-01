@@ -82,6 +82,18 @@ test("starts and stops the worker camera pipeline", async ({ page }) => {
         ],
       }),
     });
+    Object.defineProperty(navigator.mediaDevices, "enumerateDevices", {
+      configurable: true,
+      value: async () => [
+        {
+          deviceId: "camera-a",
+          groupId: "group-a",
+          kind: "videoinput",
+          label: "テストカメラ",
+          toJSON: () => ({}),
+        },
+      ],
+    });
   });
   const start = page.getByRole("button", { name: /カメラを開始/ });
   await expect(start).toBeVisible();
@@ -93,6 +105,7 @@ test("starts and stops the worker camera pipeline", async ({ page }) => {
     "二人の手を左右の枠に入れてください",
   );
   await expect(page.getByText(/Worker/)).toBeVisible();
+  await expect(page.getByLabel("カメラ")).toContainText("テストカメラ");
 
   const stop = page.getByRole("button", { name: "停止" });
   await stop.evaluate((button: HTMLButtonElement) => button.click());

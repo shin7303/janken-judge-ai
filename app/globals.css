@@ -933,6 +933,24 @@ h2 {
   border: 0;
   cursor: pointer;
 }
+
+.camera-select {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 12rem;
+  color: #617087;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.camera-select select {
+  min-height: 2.75rem;
+  padding: 0 0.65rem;
+  border: 1px solid #d5e1e2;
+  border-radius: 0.55rem;
+  background: white;
+  color: #172842;
+}
 .camera-privacy {
   margin: 16px 2px 0;
   color: #718095;

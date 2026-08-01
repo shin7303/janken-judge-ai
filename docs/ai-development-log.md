@@ -189,3 +189,15 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (53 tests), `test:e2e` (2 browser tests), and `build` passed locally.
+
+## 2026-08-01 — Camera selection and local brightness diagnostics
+
+- Enumerated available video inputs only through feature-detected browser APIs after permission, presented labeled camera choices, and handled device connection changes with listener cleanup.
+- Applied an explicitly selected device on the next camera start while retaining automatic front-camera selection as the portable fallback.
+- Sampled a 16×12 in-memory Canvas once per diagnostics window to estimate luminance without retaining or transmitting an image.
+- Added clear dark, usable, over-bright, and unavailable brightness states plus pure luminance tests.
+- Extended the deterministic camera E2E to verify that enumerated devices reach the setup UI.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (55 tests), `test:e2e` (2 browser tests), and `build` passed locally.
