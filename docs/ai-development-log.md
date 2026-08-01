@@ -250,3 +250,19 @@
 
 - Real MediaPipe camera inference, recording formats, camera stop indicators, audio, and layout still require manual checks on Windows Chrome, macOS Chrome/Safari, Android Chrome, and iPhone Safari. These cannot be truthfully simulated as completed by the current headless environment.
 - A real product screenshot remains part of that physical release pass because both supported headless screenshot paths stopped in the constrained renderer; the generated OGP visual is used as the current repository preview.
+
+## 2026-08-01 — Second adversarial audit: production dependencies
+
+- Confirmed the self-hosted 8MB model and 23MB MediaPipe WASM runtime are tracked in Git and available to deployment rather than only present in the local workspace.
+- Re-scanned application and Worker sources for external frame transmission, secrets, and unbounded browser-resource creation; no new application-code finding remained.
+- Ran a production dependency audit, which reported three high and one moderate advisory through Next.js transitive packages.
+- Excluded the vulnerable optional `sharp` package because the application does not use dynamic Next image optimization, and overrode Next's pinned PostCSS with compatible patched version 8.5.25.
+
+### Failures and fixes
+
+- The first `pnpm audit --prod` reported inherited libvips issues in `sharp` below 0.35 and source-map/stringification issues in older PostCSS. Updated the workspace install policy and lockfile, then repeated the audit and the complete verification suite.
+
+### Verification
+
+- `pnpm audit --prod` reports no known vulnerabilities.
+- `format:check`, `lint`, `typecheck`, `test` (61 tests), `test:e2e` (6 browser tests), and `build` pass without the optional image optimizer.
