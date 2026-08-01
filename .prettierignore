@@ -6,3 +6,4 @@ test-results
 docs/specification.md
 pnpm-lock.yaml
 public/mediapipe
+app/opengraph-image.alt.txt
