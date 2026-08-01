@@ -32,22 +32,42 @@ export function LiveCamera({
   const recognizerRef = useRef<GestureRecognizer | null>(null);
   const frameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const operationRef = useRef(0);
   const [status, setStatus] = useState("カメラを開始してください");
   const [hands, setHands] = useState<Hand[]>([]);
   const [fps, setFps] = useState(0);
   const [active, setActive] = useState(false);
-  const stop = useCallback(() => {
+  const [starting, setStarting] = useState(false);
+  const release = useCallback(() => {
+    operationRef.current += 1;
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
     recognizerRef.current?.close();
     recognizerRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    setHands([]);
-    setActive(false);
   }, []);
-  useEffect(() => stop, [stop]);
+  const stop = useCallback(() => {
+    release();
+    setHands([]);
+    setFps(0);
+    setActive(false);
+    setStarting(false);
+    setStatus("カメラを停止しました。再開できます。");
+  }, [release]);
+  useEffect(() => release, [release]);
   const start = async () => {
+    if (active || starting) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus(
+        "このブラウザではカメラを利用できません。対応ブラウザで開くか、デモをお試しください。",
+      );
+      return;
+    }
+    const operation = operationRef.current + 1;
+    operationRef.current = operation;
     try {
+      setStarting(true);
       setStatus("カメラとモデルを読み込んでいます…");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -57,13 +77,21 @@ export function LiveCamera({
         },
         audio: false,
       });
+      if (operationRef.current !== operation) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       onStream?.(stream);
-      setActive(true);
-      if (!videoRef.current) return;
+      if (!videoRef.current) {
+        release();
+        return;
+      }
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
+      if (operationRef.current !== operation) return;
       const fileset = await FilesetResolver.forVisionTasks(wasmUrl);
+      if (operationRef.current !== operation) return;
       const recognizer = await GestureRecognizer.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: "/models/gesture-recognizer-v1.task" },
         runningMode: "VIDEO",
@@ -76,7 +104,13 @@ export function LiveCamera({
           categoryAllowlist: ["Closed_Fist", "Open_Palm", "Victory"],
         },
       });
+      if (operationRef.current !== operation) {
+        recognizer.close();
+        return;
+      }
       recognizerRef.current = recognizer;
+      setActive(true);
+      setStarting(false);
       setStatus("二人の手を左右の枠に入れてください");
       let last = 0;
       let count = 0;
@@ -124,7 +158,12 @@ export function LiveCamera({
       };
       frameRef.current = requestAnimationFrame(loop);
     } catch (error) {
-      stop();
+      if (operationRef.current !== operation) return;
+      release();
+      setHands([]);
+      setFps(0);
+      setActive(false);
+      setStarting(false);
       setStatus(
         error instanceof DOMException && error.name === "NotAllowedError"
           ? "カメラ権限が拒否されました。ブラウザ設定を確認してください。"
@@ -143,7 +182,9 @@ export function LiveCamera({
       <div className="camera-toolbar">
         <div>
           <b>状態</b>
-          <span>{status}</span>
+          <span role="status" aria-live="polite">
+            {status}
+          </span>
         </div>
         <div>
           <b>推論FPS</b>
@@ -165,13 +206,25 @@ export function LiveCamera({
         })}
       </div>
       <div className="camera-actions">
-        <button className="button button-primary" onClick={start}>
-          カメラを開始 →
+        <button
+          className="button button-primary"
+          onClick={start}
+          disabled={active || starting}
+        >
+          {starting ? "準備中…" : active ? "カメラ使用中" : "カメラを開始 →"}
         </button>
-        <button className="button button-secondary" onClick={stop}>
+        <button
+          className="button button-secondary"
+          onClick={stop}
+          disabled={!active && !starting}
+        >
           停止
         </button>
       </div>
+      <p className="orientation-hint">
+        <span aria-hidden="true">↻</span>
+        スマートフォンは横向きにすると、二人の手を大きく映せます。
+      </p>
       <p className="camera-privacy">
         映像はこの端末内で処理され、サーバーへ送信されません。マイクは使用しません。
       </p>
