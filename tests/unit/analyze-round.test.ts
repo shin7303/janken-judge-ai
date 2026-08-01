@@ -9,7 +9,7 @@ function run(
   start: number,
   score = 0.9,
 ): FrameObservation[] {
-  return [0, 70, 140].map((offset) => ({
+  return [0, 80, 160].map((offset) => ({
     timestampMs: start + offset,
     playerId,
     gesture,
@@ -79,6 +79,41 @@ describe("analyzeRound", () => {
     expect(result.fairnessVerdict).toBe("SWITCH_DETECTED");
     expect(result.playerBFinalGesture).toBe("SCISSORS");
     expect(result.switchEvents).toHaveLength(1);
+    expect(result.reasonCodes).toContain("SWITCH_AFTER_COMMIT");
+  });
+
+  it("ignores a changed gesture that does not meet its longer threshold", () => {
+    const shortChange = [0, 70, 140].map((offset) => ({
+      ...run("PLAYER_B", "SCISSORS", 300)[0],
+      timestampMs: 300 + offset,
+    }));
+    const result = analyzeRound(
+      [
+        ...run("PLAYER_A", "ROCK", 0),
+        ...run("PLAYER_B", "PAPER", 0),
+        ...shortChange,
+      ],
+      0,
+    );
+
+    expect(result.switchEvents).toHaveLength(0);
+    expect(result.playerBFinalGesture).toBe("PAPER");
+  });
+
+  it("absorbs one-frame misclassification inside a stable run", () => {
+    const playerA = [
+      ...run("PLAYER_A", "ROCK", 0),
+      {
+        ...run("PLAYER_A", "SCISSORS", 90)[0],
+        timestampMs: 90,
+      },
+    ].sort((a, b) => a.timestampMs - b.timestampMs);
+    const result = analyzeRound(
+      [...playerA, ...run("PLAYER_B", "SCISSORS", 0)],
+      0,
+    );
+    expect(result.playerACommit?.gesture).toBe("ROCK");
+    expect(result.winner).toBe("PLAYER_A");
   });
 
   it("rejects crossed hands instead of inferring a verdict", () => {

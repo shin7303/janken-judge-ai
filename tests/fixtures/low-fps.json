@@ -1,0 +1,54 @@
+{
+  "ponTimestampMs": 0,
+  "expected": { "winner": "PLAYER_B", "fairnessVerdict": "INSUFFICIENT_DATA" },
+  "observations": [
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 200,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 400,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 200,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 400,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    }
+  ]
+}

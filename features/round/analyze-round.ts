@@ -28,6 +28,12 @@ export function extractStableRuns(
     .sort((a, b) => a.timestampMs - b.timestampMs);
   const runs: StableGestureRun[] = [];
   let bucket: FrameObservation[] = [];
+  let pending: FrameObservation[] = [];
+  const acceptable = (item: FrameObservation) =>
+    valid(item.gesture) &&
+    item.gestureScore >= config.minGestureScore &&
+    item.handVisible &&
+    item.assignmentConfidence >= config.minAssignmentConfidence;
   const close = () => {
     const first = bucket[0];
     const last = bucket.at(-1);
@@ -50,19 +56,31 @@ export function extractStableRuns(
     bucket = [];
   };
   for (const item of source) {
-    const acceptable =
-      valid(item.gesture) &&
-      item.gestureScore >= config.minGestureScore &&
-      item.handVisible &&
-      item.assignmentConfidence >= config.minAssignmentConfidence;
-    if (
-      acceptable &&
-      (bucket.length === 0 || bucket[0].gesture === item.gesture)
-    )
+    if (bucket.length === 0) {
+      if (acceptable(item)) bucket = [item];
+      continue;
+    }
+    if (acceptable(item) && bucket[0].gesture === item.gesture) {
+      pending = [];
       bucket.push(item);
-    else {
+      continue;
+    }
+    pending.push(item);
+    if (pending.length > 1) {
+      const replacement = pending;
       close();
-      if (acceptable) bucket = [item];
+      pending = [];
+      if (
+        replacement.every(acceptable) &&
+        replacement.every(
+          (candidate) => candidate.gesture === replacement[0].gesture,
+        )
+      )
+        bucket = replacement;
+      else {
+        const last = replacement.at(-1);
+        if (last && acceptable(last)) bucket = [last];
+      }
     }
   }
   close();
@@ -160,7 +178,8 @@ export function analyzeRound(
       (run) =>
         run.playerId === playerId &&
         run.startMs > commit.committedAtMs &&
-        run.gesture !== commit.gesture,
+        run.gesture !== commit.gesture &&
+        run.endMs - run.startMs >= config.changedGestureStableMs,
     );
     return next
       ? [
@@ -218,6 +237,11 @@ export function analyzeRound(
             ? "DELAYED"
             : "CLEAR";
   }
+  if (switches.length) reasonCodes.push("SWITCH_AFTER_COMMIT");
+  else if (fairnessVerdict === "LIKELY_LATE")
+    reasonCodes.push("LATE_WINNING_HAND_LARGE_DELAY");
+  else if (fairnessVerdict === "REVIEW") reasonCodes.push("LATE_WINNING_HAND");
+  else if (fairnessVerdict === "DELAYED") reasonCodes.push("COMMIT_DELAY");
   return {
     ponTimestampMs,
     playerACommit: commits.PLAYER_A,

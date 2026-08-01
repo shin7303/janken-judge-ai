@@ -1,0 +1,60 @@
+{
+  "ponTimestampMs": 0,
+  "expected": { "winner": "UNDECIDED", "fairnessVerdict": "INVALID_ROUND" },
+  "observations": [
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    },
+    {
+      "timestampMs": 80,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    },
+    {
+      "timestampMs": 160,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    },
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    },
+    {
+      "timestampMs": 80,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    },
+    {
+      "timestampMs": 160,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.9,
+      "handVisible": true,
+      "assignmentConfidence": 0,
+      "crossed": true
+    }
+  ]
+}

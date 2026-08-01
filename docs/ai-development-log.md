@@ -115,3 +115,19 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (31 tests), `format:check`, `test:e2e`, and `build` passed locally.
+
+## 2026-08-01 — Reproducible round-analysis fixtures
+
+- Added the seven specification-named JSON fixtures for simultaneous, delayed winning, delayed losing, post-commit switch, low-confidence, crossed-hand, and low-FPS rounds.
+- Added an integration suite that loads each fixture from disk and reproduces its winner and conservative fairness verdict through the production analysis function.
+- Updated stable-run extraction to tolerate one isolated missing or misclassified frame while requiring a sustained replacement before closing the current gesture.
+- Applied the longer configured threshold to post-commit gesture changes and added explicit reason codes for delays, delayed winning hands, and confirmed switches.
+
+### Failures and fixes
+
+- The first integration run resolved `import.meta.url` through Vitest's browser transform and looked for fixtures under `/tests`. Switched to an explicit project-root path for deterministic Node-side fixture loading.
+- The crossed-hands fixture initially expected a winner despite zero assignment confidence. Corrected it to `UNDECIDED`, preserving the rule that invalid tracking must not produce a definitive winner.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (40 tests), `format:check`, and `build` passed locally.

@@ -13,7 +13,7 @@ const samples = (
   startMs: number,
   score = 0.9,
 ): FrameObservation[] =>
-  [0, 70, 140].map((offset) => ({
+  [0, 80, 160].map((offset) => ({
     timestampMs: startMs + offset,
     playerId,
     gesture,

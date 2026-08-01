@@ -1,0 +1,54 @@
+{
+  "ponTimestampMs": 0,
+  "expected": { "winner": "UNDECIDED", "fairnessVerdict": "INSUFFICIENT_DATA" },
+  "observations": [
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 80,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 160,
+      "playerId": "PLAYER_A",
+      "gesture": "ROCK",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 0,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 80,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    },
+    {
+      "timestampMs": 160,
+      "playerId": "PLAYER_B",
+      "gesture": "PAPER",
+      "gestureScore": 0.4,
+      "handVisible": true,
+      "assignmentConfidence": 1
+    }
+  ]
+}
