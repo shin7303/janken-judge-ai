@@ -22,3 +22,8 @@
 - Added framework-independent domain types and the round timing configuration.
 - Implemented pure winner, stable-gesture, quality, delayed-commitment, and post-commit switch logic.
 - Added unit tests for draws, all winner directions, review and likely-late thresholds, delayed losing hands, switches, and crossed-hand invalidation.
+
+## 2026-08-01 — Interactive demo
+
+- Replaced the placeholder demo route with selectable fixed scenarios backed by the same pure round-analysis logic used by the app.
+- Displayed final gestures, winner, commitment delay, quality, reason codes, and a compact event timeline.
