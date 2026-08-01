@@ -602,6 +602,130 @@ h2 {
   font-size: 11px;
   line-height: 1.6;
 }
+.setup-page {
+  min-height: 100dvh;
+  padding: 22px clamp(20px, 6vw, 100px) 72px;
+  background: #f6faf7;
+}
+.setup-intro,
+.camera-shell {
+  max-width: 900px;
+  margin-right: auto;
+  margin-left: auto;
+}
+.setup-intro {
+  margin-top: 70px;
+}
+.setup-intro h1 {
+  max-width: 700px;
+  font-size: clamp(43px, 6vw, 76px);
+  line-height: 1;
+}
+.setup-intro h1 em {
+  color: #ed6231;
+  font-style: normal;
+}
+.setup-intro > p:last-child {
+  max-width: 620px;
+  color: #617087;
+  line-height: 1.8;
+}
+.camera-shell {
+  margin-top: 42px;
+  padding: 18px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 12px 28px rgb(18 34 61 / 0.09);
+}
+.camera-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 310px;
+  border-radius: 10px;
+  background: #172842;
+}
+.camera-video {
+  width: 100%;
+  height: 100%;
+  min-height: 310px;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.camera-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #aab6c7;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+.roi {
+  position: absolute;
+  top: 14%;
+  bottom: 14%;
+  width: 42%;
+  padding: 9px;
+  border: 2px dashed rgb(255 255 255 / 0.7);
+  border-radius: 8px;
+  color: white;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.roi-a {
+  left: 4%;
+}
+.roi-b {
+  right: 4%;
+  text-align: right;
+}
+.camera-toolbar,
+.hand-readings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+.camera-toolbar div,
+.hand-readings div {
+  padding: 11px;
+  border-radius: 7px;
+  background: #f3f7f9;
+}
+.camera-toolbar b,
+.hand-readings span {
+  display: block;
+  color: #748398;
+  font-size: 10px;
+}
+.camera-toolbar span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.hand-readings b {
+  display: block;
+  margin: 5px 0;
+}
+.hand-readings small {
+  color: #e2632d;
+}
+.camera-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.camera-actions button {
+  border: 0;
+  cursor: pointer;
+}
+.camera-privacy {
+  margin: 16px 2px 0;
+  color: #718095;
+  font-size: 11px;
+}
 @media (max-width: 720px) {
   .hero {
     padding: 19px 21px 48px;
@@ -646,6 +770,19 @@ h2 {
   }
   .metrics {
     grid-template-columns: 1fr;
+  }
+  .camera-toolbar,
+  .hand-readings {
+    grid-template-columns: 1fr;
+  }
+  .camera-actions {
+    flex-direction: column;
+  }
+  .camera-actions .button {
+    justify-content: center;
+  }
+  .setup-intro {
+    margin-top: 55px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

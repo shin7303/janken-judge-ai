@@ -27,3 +27,10 @@
 
 - Replaced the placeholder demo route with selectable fixed scenarios backed by the same pure round-analysis logic used by the app.
 - Displayed final gestures, winner, commitment delay, quality, reason codes, and a compact event timeline.
+
+## 2026-08-01 — Live camera recognition
+
+- Added an explicit user-initiated camera flow with no microphone request.
+- Bundled the MediaPipe Gesture Recognizer model as a versioned static asset and configured two-hand VIDEO recognition.
+- Assigned players by horizontal landmark position and displayed live gesture, confidence, and inference FPS.
+- Stopped tracks and disposed the recognizer when the user stops the camera or leaves the page.

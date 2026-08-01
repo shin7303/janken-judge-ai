@@ -1,23 +1,27 @@
 import Link from "next/link";
+import { LiveCamera } from "@/components/camera/live-camera";
 
 export default function SetupPage() {
   return (
-    <main className="status-page">
-      <div className="status-card">
+    <main className="setup-page">
+      <header className="demo-header">
+        <Link className="brand" href="/">
+          <span className="brand-mark">✦</span>JANKEN JUDGE AI
+        </Link>
+        <Link className="back-link" href="/">
+          ← トップへ
+        </Link>
+      </header>
+      <section className="setup-intro">
         <p className="eyebrow">CAMERA SETUP</p>
         <h1>
-          カメラ判定を
-          <br />
-          準備しています。
+          二人の手を、<em>AIが見守る。</em>
         </h1>
         <p>
-          カメラ権限、MediaPipe による手認識、二人の手の位置判定を
-          実装後、この画面から安全にカメラを開始できるようにします。
+          左右それぞれの枠に、手首から指先までを入れてください。開始ボタンを押すまでカメラは起動しません。
         </p>
-        <Link className="button button-primary" href="/">
-          トップへ戻る <span aria-hidden="true">→</span>
-        </Link>
-      </div>
+      </section>
+      <LiveCamera />
     </main>
   );
 }
