@@ -7,6 +7,7 @@ import {
   type LiveCameraDiagnostics,
 } from "@/components/camera/live-camera";
 import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
+import { ROUND_CONFIG } from "@/domain/round-config";
 
 const initialDiagnostics: LiveCameraDiagnostics = {
   running: false,
@@ -26,6 +27,7 @@ export function SetupCamera() {
   const [diagnostics, setDiagnostics] =
     useState<LiveCameraDiagnostics>(initialDiagnostics);
   const [tabActive, setTabActive] = useState(true);
+  const [stableReady, setStableReady] = useState(false);
 
   useEffect(() => {
     if (!("visibilityState" in document)) return;
@@ -46,6 +48,18 @@ export function SetupCamera() {
     inferenceFps: diagnostics.fps,
     tabActive,
   });
+  useEffect(() => {
+    if (!readiness.ready) {
+      const resetTimer = window.setTimeout(() => setStableReady(false), 0);
+      return () => window.clearTimeout(resetTimer);
+    }
+    const timer = window.setTimeout(
+      () => setStableReady(true),
+      ROUND_CONFIG.readyStableMs,
+    );
+    return () => window.clearTimeout(timer);
+  }, [readiness.ready]);
+  const setupReady = readiness.ready && stableReady;
 
   return (
     <>
@@ -54,7 +68,11 @@ export function SetupCamera() {
         <div>
           <p className="eyebrow">READINESS CHECK</p>
           <h2 id="readiness-title">
-            {readiness.ready ? "準備OK" : "準備を確認中"}
+            {setupReady
+              ? "準備OK"
+              : readiness.ready
+                ? "安定性を確認中"
+                : "準備を確認中"}
           </h2>
         </div>
         <ul>
@@ -67,7 +85,7 @@ export function SetupCamera() {
         </ul>
       </section>
       <div className="camera-actions setup-next">
-        {readiness.ready ? (
+        {setupReady ? (
           <Link className="button button-primary" href="/play">
             ラウンドへ進む →
           </Link>

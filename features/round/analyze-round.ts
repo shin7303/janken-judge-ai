@@ -54,7 +54,7 @@ export function extractStableRuns(
       valid(item.gesture) &&
       item.gestureScore >= config.minGestureScore &&
       item.handVisible &&
-      item.assignmentConfidence >= 0.5;
+      item.assignmentConfidence >= config.minAssignmentConfidence;
     if (
       acceptable &&
       (bucket.length === 0 || bucket[0].gesture === item.gesture)
@@ -82,7 +82,7 @@ function quality(
   const fps = intervals.length ? 1000 / median(intervals) : 0;
   const dropped = observations.filter((item) => !item.handVisible).length;
   const ambiguous = observations.filter(
-    (item) => item.assignmentConfidence < 0.5,
+    (item) => item.assignmentConfidence < config.minAssignmentConfidence,
   ).length;
   const avg = (playerId: PlayerId) => {
     const scores = observations

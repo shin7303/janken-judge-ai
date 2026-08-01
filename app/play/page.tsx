@@ -22,7 +22,9 @@ export default function PlayPage() {
         gesture: hand.gesture,
         gestureScore: hand.score,
         handVisible: true,
-        assignmentConfidence: 1,
+        centroid: hand.centroid,
+        assignmentConfidence: hand.assignmentConfidence,
+        crossed: hand.crossed,
       })),
     );
     observations.current = observations.current.slice(-120);

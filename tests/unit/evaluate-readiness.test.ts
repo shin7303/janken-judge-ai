@@ -39,6 +39,20 @@ describe("evaluateSetupReadiness", () => {
     expect(result.checks.gestureConfidence).toBe(false);
   });
 
+  it("does not claim readiness after a crossing is detected", () => {
+    const result = evaluateSetupReadiness({
+      ...readyInput,
+      hands: readyInput.hands.map((hand) => ({
+        ...hand,
+        crossed: true,
+        assignmentConfidence: 0,
+      })),
+    });
+
+    expect(result.ready).toBe(false);
+    expect(result.checks.playerRegions).toBe(false);
+  });
+
   it("keeps the round unavailable for low FPS, confidence, or a hidden tab", () => {
     const result = evaluateSetupReadiness({
       ...readyInput,

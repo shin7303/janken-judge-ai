@@ -78,3 +78,21 @@
 
 - `lint`, `typecheck`, `test` (20 tests), `format:check`, `test:e2e`, and `build` passed locally.
 - The mobile E2E confirmed that the new diagnostics panel does not introduce horizontal overflow at the covered portrait and landscape sizes.
+
+## 2026-08-01 — Stable player tracking and crossing detection
+
+- Added pure position-based player assignment using landmark centroids, mirrored screen coordinates, prior-frame distance, and centralized ambiguity thresholds.
+- Marked same-ROI hands, converged hands, and trajectory crossovers as crossed with zero assignment confidence instead of silently swapping player observations.
+- Propagated centroid, assignment confidence, and crossing state into round observations so unreliable tracking produces an invalid result.
+- Required all setup checks to remain valid for the configured 500ms stability window before enabling the live round.
+- Added tests for normal assignment, same-region and near-center invalidation, trajectory crossover, central ambiguity, crossed setup diagnostics, and the stability delay.
+
+### Failures and fixes
+
+- The first format check found two new tracking files; formatted them before the complete verification run.
+- The first stability implementation synchronously reset state inside an effect, which Next.js 16 lint rejects. Reworked the reset and completion transitions to occur through disposable timers.
+- A ref-generation alternative passed tests but violated the React rule against reading refs during render. Removed it and retained an explicit instantaneous-readiness guard around the timer state.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (25 tests), `format:check`, `test:e2e`, and `build` passed locally.

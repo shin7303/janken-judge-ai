@@ -5,6 +5,8 @@ export type SetupHand = {
   player: PlayerId;
   gesture: Gesture;
   score: number;
+  assignmentConfidence?: number;
+  crossed?: boolean;
 };
 
 export type SetupReadinessInput = {
@@ -31,7 +33,15 @@ export function evaluateSetupReadiness(
   const playerA = input.hands.filter((hand) => hand.player === "PLAYER_A");
   const playerB = input.hands.filter((hand) => hand.player === "PLAYER_B");
   const playerRegions =
-    input.hands.length === 2 && playerA.length === 1 && playerB.length === 1;
+    input.hands.length === 2 &&
+    playerA.length === 1 &&
+    playerB.length === 1 &&
+    input.hands.every(
+      (hand) =>
+        !hand.crossed &&
+        (hand.assignmentConfidence ?? 1) >=
+          ROUND_CONFIG.minAssignmentConfidence,
+    );
   const gestureConfidence =
     playerRegions &&
     input.hands.every(

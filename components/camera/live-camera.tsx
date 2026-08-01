@@ -3,13 +3,20 @@
 import { FilesetResolver, GestureRecognizer } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { blendGesture } from "@/features/gesture/classify-landmarks";
-import type { Gesture, PlayerId } from "@/domain/types";
+import {
+  assignHandsToPlayers,
+  type PlayerTrackingState,
+} from "@/features/player-tracking/assign-hands";
+import type { Gesture, PlayerId, Point2D } from "@/domain/types";
 
 export type LiveHand = {
   player: PlayerId;
   gesture: Gesture;
   score: number;
   timestampMs: number;
+  centroid: Point2D;
+  assignmentConfidence: number;
+  crossed: boolean;
 };
 export type LiveCameraDiagnostics = {
   running: boolean;
@@ -40,6 +47,7 @@ export function LiveCamera({
   const frameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const operationRef = useRef(0);
+  const trackingRef = useRef<PlayerTrackingState>({});
   const [status, setStatus] = useState("カメラを開始してください");
   const [hands, setHands] = useState<Hand[]>([]);
   const [fps, setFps] = useState(0);
@@ -56,6 +64,7 @@ export function LiveCamera({
     recognizerRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    trackingRef.current = {};
   }, []);
   const stop = useCallback(() => {
     release();
@@ -135,26 +144,36 @@ export function LiveCamera({
         ) {
           last = now;
           const result = recognizerRef.current.recognizeForVideo(video, now);
-          const found = result.landmarks
-            .map((points, index) => {
-              const category = result.gestures[index]?.[0];
-              const classification = blendGesture(
-                category?.categoryName,
-                category?.score ?? 0,
-                points,
-              );
-              const screenX = 1 - (points[0]?.x ?? 0.5);
-              const player: Hand["player"] =
-                screenX < 0.5 ? "PLAYER_A" : "PLAYER_B";
-              return {
-                player,
-                gesture: classification.gesture,
-                label: gestureNames[classification.gesture],
-                score: classification.score,
-                timestampMs: now,
-              };
-            })
-            .sort((a, b) => a.player.localeCompare(b.player));
+          const detections = result.landmarks.map((points, index) => {
+            const category = result.gestures[index]?.[0];
+            const classification = blendGesture(
+              category?.categoryName,
+              category?.score ?? 0,
+              points,
+            );
+            const centroid = points.reduce(
+              (sum, point) => ({
+                x: sum.x + (1 - point.x) / points.length,
+                y: sum.y + point.y / points.length,
+              }),
+              { x: 0, y: 0 },
+            );
+            return {
+              centroid,
+              gesture: classification.gesture,
+              label: gestureNames[classification.gesture],
+              score: classification.score,
+              timestampMs: now,
+            };
+          });
+          const assigned = assignHandsToPlayers(
+            detections,
+            trackingRef.current,
+          );
+          trackingRef.current = assigned.next;
+          const found: Hand[] = assigned.hands.sort((a, b) =>
+            a.player.localeCompare(b.player),
+          );
           setHands(found);
           onFrame?.(found);
           count += 1;

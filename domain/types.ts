@@ -11,6 +11,7 @@ export type FairnessVerdict =
   | "INSUFFICIENT_DATA"
   | "INVALID_ROUND";
 export type QualityLevel = "HIGH" | "MEDIUM" | "LOW" | "INVALID";
+export type Point2D = { x: number; y: number };
 
 export interface FrameObservation {
   timestampMs: number;
@@ -18,6 +19,7 @@ export interface FrameObservation {
   gesture: Gesture;
   gestureScore: number;
   handVisible: boolean;
+  centroid?: Point2D | null;
   assignmentConfidence: number;
   crossed?: boolean;
 }
