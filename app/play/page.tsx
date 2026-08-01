@@ -7,9 +7,10 @@ import {
   type LiveCameraDiagnostics,
   type LiveHand,
 } from "@/components/camera/live-camera";
-import { ROUND_CONFIG } from "@/domain/round-config";
+import { SENSITIVITY_CONFIGS } from "@/domain/round-config";
 import type { FrameObservation, PlayerId } from "@/domain/types";
 import { analyzeRound } from "@/features/round/analyze-round";
+import { createCountdownAudio } from "@/features/round/countdown-audio";
 import {
   initialRoundState,
   roundMachine,
@@ -22,15 +23,19 @@ import {
   revokeStoredReplay,
 } from "@/features/replay/storage";
 import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
+import { usePlaySettings } from "@/features/settings/use-settings";
 
 const players: PlayerId[] = ["PLAYER_A", "PLAYER_B"];
 
 export default function PlayPage() {
+  const { settings } = usePlaySettings();
+  const config = SENSITIVITY_CONFIGS[settings.sensitivity];
   const observations = useRef<FrameObservation[]>([]);
   const stream = useRef<MediaStream | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const replayChunks = useRef<Blob[]>([]);
   const recordingStartedAt = useRef<number | null>(null);
+  const countdownAudio = useRef<ReturnType<typeof createCountdownAudio>>(null);
   const [state, dispatch] = useReducer(roundMachine, initialRoundState);
   const [tabActive, setTabActive] = useState(true);
 
@@ -69,18 +74,21 @@ export default function PlayPage() {
       const roundInProgress = ["COUNTDOWN", "PON", "OBSERVING"].includes(
         state.phase,
       );
-      const readiness = evaluateSetupReadiness({
-        cameraAndModelReady: diagnostics.running,
-        hands: diagnostics.hands,
-        inferenceFps: diagnostics.fps,
-        tabActive,
-      });
+      const readiness = evaluateSetupReadiness(
+        {
+          cameraAndModelReady: diagnostics.running,
+          hands: diagnostics.hands,
+          inferenceFps: diagnostics.fps,
+          tabActive,
+        },
+        config,
+      );
       dispatch({
         type: "CAMERA_STATUS",
         ready: roundInProgress ? diagnostics.running : readiness.ready,
       });
     },
-    [state.phase, tabActive],
+    [config, state.phase, tabActive],
   );
 
   useEffect(() => {
@@ -103,7 +111,7 @@ export default function PlayPage() {
     const ponTimestampMs = state.ponTimestampMs;
     if (ponTimestampMs === null) return;
     dispatch({ type: "FINALIZE" });
-    const result = analyzeRound(observations.current, ponTimestampMs);
+    const result = analyzeRound(observations.current, ponTimestampMs, config);
     sessionStorage.setItem("janken-last-result", JSON.stringify(result));
     const activeRecorder = recorder.current;
     if (activeRecorder?.state === "recording") {
@@ -136,10 +144,17 @@ export default function PlayPage() {
       };
       activeRecorder.stop();
     } else {
+      void countdownAudio.current?.close();
+      countdownAudio.current = null;
       dispatch({ type: "COMPLETE" });
       location.assign("/play/result");
     }
-  }, [state.ponTimestampMs]);
+  }, [config, state.ponTimestampMs]);
+
+  useEffect(() => {
+    if (state.phase === "COUNTDOWN") countdownAudio.current?.beep();
+    if (state.phase === "PON") countdownAudio.current?.beep(true);
+  }, [state.countdown, state.phase]);
 
   useEffect(() => {
     if (state.phase === "COUNTDOWN") {
@@ -164,11 +179,17 @@ export default function PlayPage() {
       const elapsed = performance.now() - (state.ponTimestampMs ?? 0);
       const timer = window.setTimeout(
         finishRound,
-        Math.max(0, ROUND_CONFIG.postPonDeadlineMs - elapsed),
+        Math.max(0, config.postPonDeadlineMs - elapsed),
       );
       return () => window.clearTimeout(timer);
     }
-  }, [finishRound, state.countdown, state.phase, state.ponTimestampMs]);
+  }, [
+    config.postPonDeadlineMs,
+    finishRound,
+    state.countdown,
+    state.phase,
+    state.ponTimestampMs,
+  ]);
 
   useEffect(() => {
     if (state.phase !== "ABORTED") return;
@@ -177,6 +198,8 @@ export default function PlayPage() {
       activeRecorder.onstop = null;
       activeRecorder.stop();
     }
+    void countdownAudio.current?.close();
+    countdownAudio.current = null;
   }, [state.phase]);
 
   useEffect(
@@ -186,6 +209,8 @@ export default function PlayPage() {
         activeRecorder.onstop = null;
         activeRecorder.stop();
       }
+      void countdownAudio.current?.close();
+      countdownAudio.current = null;
     },
     [],
   );
@@ -195,9 +220,11 @@ export default function PlayPage() {
     observations.current = [];
     replayChunks.current = [];
     recordingStartedAt.current = null;
+    void countdownAudio.current?.close();
+    countdownAudio.current = createCountdownAudio(settings.countdownVolume);
     revokeStoredReplay(sessionStorage);
     sessionStorage.removeItem(REPLAY_UNAVAILABLE_KEY);
-    if (stream.current && "MediaRecorder" in window) {
+    if (settings.replayEnabled && stream.current && "MediaRecorder" in window) {
       try {
         recorder.current = new MediaRecorder(
           stream.current,
@@ -220,6 +247,11 @@ export default function PlayPage() {
           "このブラウザではリプレイ録画を開始できません。判定のみ続行します。",
         );
       }
+    } else if (!settings.replayEnabled) {
+      sessionStorage.setItem(
+        REPLAY_UNAVAILABLE_KEY,
+        "設定でスローリプレイが無効です。判定タイムラインは確認できます。",
+      );
     } else {
       sessionStorage.setItem(
         REPLAY_UNAVAILABLE_KEY,
@@ -282,6 +314,7 @@ export default function PlayPage() {
         onStream={(next) => {
           stream.current = next;
         }}
+        mirrored={settings.mirrored}
       />
     </main>
   );

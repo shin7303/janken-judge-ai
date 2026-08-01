@@ -7,7 +7,9 @@ import {
   type LiveCameraDiagnostics,
 } from "@/components/camera/live-camera";
 import { evaluateSetupReadiness } from "@/features/setup/evaluate-readiness";
-import { ROUND_CONFIG } from "@/domain/round-config";
+import { SENSITIVITY_CONFIGS } from "@/domain/round-config";
+import { resetSettings } from "@/features/settings/store";
+import { usePlaySettings } from "@/features/settings/use-settings";
 
 const initialDiagnostics: LiveCameraDiagnostics = {
   running: false,
@@ -27,6 +29,8 @@ const checkLabels = {
 } as const;
 
 export function SetupCamera() {
+  const { settings, update } = usePlaySettings();
+  const config = SENSITIVITY_CONFIGS[settings.sensitivity];
   const [diagnostics, setDiagnostics] =
     useState<LiveCameraDiagnostics>(initialDiagnostics);
   const [tabActive, setTabActive] = useState(true);
@@ -45,12 +49,15 @@ export function SetupCamera() {
   const onDiagnostics = useCallback((next: LiveCameraDiagnostics) => {
     setDiagnostics(next);
   }, []);
-  const readiness = evaluateSetupReadiness({
-    cameraAndModelReady: diagnostics.running,
-    hands: diagnostics.hands,
-    inferenceFps: diagnostics.fps,
-    tabActive,
-  });
+  const readiness = evaluateSetupReadiness(
+    {
+      cameraAndModelReady: diagnostics.running,
+      hands: diagnostics.hands,
+      inferenceFps: diagnostics.fps,
+      tabActive,
+    },
+    config,
+  );
   useEffect(() => {
     if (!readiness.ready) {
       const resetTimer = window.setTimeout(() => setStableReady(false), 0);
@@ -58,15 +65,71 @@ export function SetupCamera() {
     }
     const timer = window.setTimeout(
       () => setStableReady(true),
-      ROUND_CONFIG.readyStableMs,
+      config.readyStableMs,
     );
     return () => window.clearTimeout(timer);
-  }, [readiness.ready]);
+  }, [config.readyStableMs, readiness.ready]);
   const setupReady = readiness.ready && stableReady;
 
   return (
     <>
-      <LiveCamera onDiagnostics={onDiagnostics} />
+      <LiveCamera onDiagnostics={onDiagnostics} mirrored={settings.mirrored} />
+      <section className="settings-panel" aria-labelledby="settings-title">
+        <div>
+          <p className="eyebrow">PLAY SETTINGS</p>
+          <h2 id="settings-title">判定設定</h2>
+        </div>
+        <label>
+          判定感度
+          <select
+            value={settings.sensitivity}
+            onChange={(event) =>
+              update({
+                sensitivity: event.target.value as typeof settings.sensitivity,
+              })
+            }
+          >
+            <option value="strict">厳しめ</option>
+            <option value="standard">標準</option>
+            <option value="lenient">ゆるめ</option>
+          </select>
+        </label>
+        <label>
+          カウントダウン音量
+          <select
+            value={settings.countdownVolume}
+            onChange={(event) =>
+              update({ countdownVolume: Number(event.target.value) })
+            }
+          >
+            <option value="0">ミュート</option>
+            <option value="0.25">小</option>
+            <option value="0.5">標準</option>
+            <option value="1">大</option>
+          </select>
+        </label>
+        <label className="settings-check">
+          <input
+            type="checkbox"
+            checked={settings.replayEnabled}
+            onChange={(event) =>
+              update({ replayEnabled: event.target.checked })
+            }
+          />
+          スローリプレイを保存
+        </label>
+        <label className="settings-check">
+          <input
+            type="checkbox"
+            checked={settings.mirrored}
+            onChange={(event) => update({ mirrored: event.target.checked })}
+          />
+          プレビューを左右反転
+        </label>
+        <button className="button button-secondary" onClick={resetSettings}>
+          設定を初期値に戻す
+        </button>
+      </section>
       <section className="setup-diagnostics" aria-labelledby="readiness-title">
         <div>
           <p className="eyebrow">READINESS CHECK</p>

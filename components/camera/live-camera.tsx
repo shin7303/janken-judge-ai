@@ -56,10 +56,12 @@ export function LiveCamera({
   onFrame,
   onStream,
   onDiagnostics,
+  mirrored = true,
 }: {
   onFrame?: (hands: LiveHand[]) => void;
   onStream?: (stream: MediaStream) => void;
   onDiagnostics?: (diagnostics: LiveCameraDiagnostics) => void;
+  mirrored?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const recognizerRef = useRef<GestureRecognizer | null>(null);
@@ -214,7 +216,7 @@ export function LiveCamera({
           );
           const centroid = points.reduce(
             (sum, point) => ({
-              x: sum.x + (1 - point.x) / points.length,
+              x: sum.x + (mirrored ? 1 - point.x : point.x) / points.length,
               y: sum.y + point.y / points.length,
             }),
             { x: 0, y: 0 },
@@ -474,7 +476,12 @@ export function LiveCamera({
   return (
     <section className="camera-shell">
       <div className="camera-stage">
-        <video ref={videoRef} muted playsInline className="camera-video" />
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          className={`camera-video${mirrored ? "" : " unmirrored"}`}
+        />
         <div className="roi roi-a">PLAYER A</div>
         <div className="roi roi-b">PLAYER B</div>
         {!active && <div className="camera-empty">CAMERA OFF</div>}

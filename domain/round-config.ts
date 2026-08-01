@@ -28,4 +28,20 @@ export const ROUND_CONFIG = {
   minimumInferenceFps: 10,
   recommendedInferenceFps: 15,
 } as const;
-export type RoundConfig = typeof ROUND_CONFIG;
+export type RoundConfig = { [Key in keyof typeof ROUND_CONFIG]: number };
+
+export const SENSITIVITY_CONFIGS = {
+  strict: {
+    ...ROUND_CONFIG,
+    minGestureScore: 0.7,
+    reviewDelayMs: 150,
+    likelyLateDelayMs: 300,
+  },
+  standard: ROUND_CONFIG,
+  lenient: {
+    ...ROUND_CONFIG,
+    minGestureScore: 0.6,
+    reviewDelayMs: 250,
+    likelyLateDelayMs: 450,
+  },
+} satisfies Record<string, RoundConfig>;

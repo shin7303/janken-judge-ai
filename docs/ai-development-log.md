@@ -172,3 +172,20 @@
 ### Verification
 
 - `lint`, `typecheck`, `test` (51 tests), `format:check`, `test:e2e` (2 browser tests), and `build` passed locally.
+
+## 2026-08-01 — Local play settings and countdown audio
+
+- Added locally persisted strict, standard, and lenient sensitivity profiles backed by the shared threshold configuration.
+- Added setup controls for sensitivity, replay recording, mirrored preview, countdown volume, and restoring defaults.
+- Applied the selected thresholds consistently to setup readiness and final round analysis.
+- Applied mirrored coordinates and presentation together so player assignment remains aligned with the visible ROIs.
+- Added feature-detected Web Audio countdown cues with muted fallback and lifecycle cleanup; recording remains optional and local-only.
+- Added defensive parsing and clamping tests for corrupted or out-of-range stored settings.
+
+### Failures and fixes
+
+- The first verification command used an unavailable standalone `pnpm` executable. Re-ran every check through the repository-pinned `corepack pnpm` version.
+
+### Verification
+
+- `lint`, `typecheck`, `test` (53 tests), `test:e2e` (2 browser tests), and `build` passed locally.

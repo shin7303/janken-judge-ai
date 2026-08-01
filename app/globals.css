@@ -813,6 +813,56 @@ h2 {
   object-fit: cover;
   transform: scaleX(-1);
 }
+
+.camera-video.unmirrored {
+  transform: none;
+}
+
+.settings-panel {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) repeat(2, minmax(10rem, 0.7fr));
+  gap: 1rem;
+  align-items: end;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.settings-panel h2,
+.settings-panel p {
+  margin: 0;
+}
+
+.settings-panel label:not(.settings-check) {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.settings-panel select {
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--background);
+  color: inherit;
+}
+
+.settings-check {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+@media (max-width: 760px) {
+  .settings-panel {
+    grid-template-columns: 1fr;
+  }
+}
 .camera-empty {
   position: absolute;
   inset: 0;

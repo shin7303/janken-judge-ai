@@ -1,4 +1,4 @@
-import { ROUND_CONFIG } from "@/domain/round-config";
+import { ROUND_CONFIG, type RoundConfig } from "@/domain/round-config";
 import type { Gesture, PlayerId } from "@/domain/types";
 
 export type SetupHand = {
@@ -29,6 +29,7 @@ export type SetupReadiness = {
 
 export function evaluateSetupReadiness(
   input: SetupReadinessInput,
+  config: RoundConfig = ROUND_CONFIG,
 ): SetupReadiness {
   const playerA = input.hands.filter((hand) => hand.player === "PLAYER_A");
   const playerB = input.hands.filter((hand) => hand.player === "PLAYER_B");
@@ -39,15 +40,13 @@ export function evaluateSetupReadiness(
     input.hands.every(
       (hand) =>
         !hand.crossed &&
-        (hand.assignmentConfidence ?? 1) >=
-          ROUND_CONFIG.minAssignmentConfidence,
+        (hand.assignmentConfidence ?? 1) >= config.minAssignmentConfidence,
     );
   const gestureConfidence =
     playerRegions &&
     input.hands.every(
       (hand) =>
-        hand.gesture !== "UNKNOWN" &&
-        hand.score >= ROUND_CONFIG.minGestureScore,
+        hand.gesture !== "UNKNOWN" && hand.score >= config.minGestureScore,
     );
   const checks = {
     cameraAndModel: input.cameraAndModelReady,
@@ -55,7 +54,7 @@ export function evaluateSetupReadiness(
     gestureConfidence,
     inferencePerformance:
       input.cameraAndModelReady &&
-      input.inferenceFps >= ROUND_CONFIG.minimumInferenceFps,
+      input.inferenceFps >= config.minimumInferenceFps,
     activeTab: input.tabActive,
   };
 
