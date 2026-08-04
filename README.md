@@ -7,7 +7,11 @@
 
 ![二人の手と判定タイムラインを表したJanken Judge AIのプレビュー](app/opengraph-image.png)
 
-Next.js 16 / TypeScript による個人開発アプリです。サーバー、DB、外部推論APIを一切使わず、映像認識から判定・リプレイ・履歴までをブラウザだけで完結させています。
+> **Vibe Coding で開発しました。** 仕様書と実装規律を人間が書き、コードは **Codex** が生成しています。
+> AIの出力を自動採用せず、Lint・型検査・単体／結合／E2Eテスト・本番ビルドがCIで全部通ることを完了条件にしました。
+> 失敗と修正の全履歴は [AI development log](docs/ai-development-log.md) に公開しています。
+
+Next.js 16 / TypeScript のアプリです。サーバー、DB、外部推論APIを一切使わず、映像認識から判定・リプレイ・履歴までをブラウザだけで完結させています。
 
 ## この実装の見どころ
 
@@ -19,6 +23,7 @@ Next.js 16 / TypeScript による個人開発アプリです。サーバー、DB
 | 堅牢性 | カメラAPI・Worker・MediaRecorder・Web Audioの非対応を個別にフォールバック |
 | テスト | Vitest 23ファイル（判定・追跡・状態機械・キュー・フォールバック）＋ Playwright E2E。CIで型検査・Lint・テスト・本番ビルドを実行 |
 | 誠実な設計 | 信頼できない観測は無理に勝敗を出さず`INSUFFICIENT_DATA` / `INVALID_ROUND`を返す |
+| AI開発の統制 | 仕様書＝唯一の入力、`AGENTS.md`＝実装規律、CI全緑＝完了条件。純粋関数＋JSONフィクスチャでAI生成コードを機械検証 |
 
 - インストール不要
 - 映像・静止画は端末内だけで処理
