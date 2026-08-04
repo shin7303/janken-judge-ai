@@ -1,18 +1,29 @@
 # Janken Judge AI
 
-二人のじゃんけんをカメラで認識し、勝敗だけでなく、両者の手が確定した推定時刻と確定後の変更を解析するブラウザAI審判です。
+**カメラに映った二人の手をブラウザ内で認識し、勝敗と「どちらが先に手を確定したか」を解析するAI審判です。**
+
+[![デモを触る](https://img.shields.io/badge/demo-janken--judge--ai.vercel.app-e0603a?style=for-the-badge)](https://janken-judge-ai.vercel.app)
+[![ポートフォリオ](https://img.shields.io/badge/portfolio-shin7303.github.io-14181f?style=for-the-badge)](https://shin7303.github.io)
+
+![二人の手と判定タイムラインを表したJanken Judge AIのプレビュー](app/opengraph-image.png)
+
+Next.js 16 / TypeScript による個人開発アプリです。サーバー、DB、外部推論APIを一切使わず、映像認識から判定・リプレイ・履歴までをブラウザだけで完結させています。
+
+## この実装の見どころ
+
+| 観点 | やったこと |
+| --- | --- |
+| リアルタイム画像認識 | MediaPipe TasksをWeb Workerで実行。最新1フレームだけを保持するキューと自動解像度調整でメインスレッドの詰まりを回避 |
+| ロジックとUIの分離 | 勝敗・確定時刻・公平性の解析を純粋関数として`domain/`に隔離し、7種のJSON観測データで再現テスト |
+| プライバシー設計 | バックエンド・API Route・認証・DBなし。映像とランドマークは送信せず、履歴は端末内のみ |
+| 堅牢性 | カメラAPI・Worker・MediaRecorder・Web Audioの非対応を個別にフォールバック |
+| テスト | Vitest 23ファイル（判定・追跡・状態機械・キュー・フォールバック）＋ Playwright E2E。CIで型検査・Lint・テスト・本番ビルドを実行 |
+| 誠実な設計 | 信頼できない観測は無理に勝敗を出さず`INSUFFICIENT_DATA` / `INVALID_ROUND`を返す |
 
 - インストール不要
 - 映像・静止画は端末内だけで処理
 - スローリプレイと判定タイムライン
-- 信頼できない観測は「判定不能」
 - 両手が準備できると自動でカウントダウン開始
-
-![二人の手と判定タイムラインを表したJanken Judge AIのプレビュー](app/opengraph-image.png)
-
-## 公開URL
-
-**[https://janken-judge-ai.vercel.app](https://janken-judge-ai.vercel.app)**
 
 ## 30秒で分かる概要
 
